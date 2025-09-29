@@ -23,8 +23,10 @@ public class GameController : MonoBehaviour
     public ToolType currentTool = ToolType.Scanner;
 
     public Vector2 mouseStartPosition;
+    public Quaternion plantStartRotation;
 
-    public InputAction pointAction;
+    private InputAction clickAction;
+    private InputAction pointAction;
     private InputAction unselectToolAction;
     private InputAction selectScannerAction;
     private InputAction selectNitrogenAction;
@@ -37,6 +39,7 @@ public class GameController : MonoBehaviour
     {
         var inputActionAsset = InputSystem.actions;
         pointAction = inputActionAsset.FindAction("Point");
+        clickAction = inputActionAsset.FindAction("Click");
         unselectToolAction = inputActionAsset.FindAction("UnselectTool");
         selectScannerAction = inputActionAsset.FindAction("SelectScanner");
         selectNitrogenAction = inputActionAsset.FindAction("SelectNitrogen");
@@ -56,8 +59,6 @@ public class GameController : MonoBehaviour
                 DisableAll();
                 currentTool = ToolType.None;
                 Debug.Log("Unselected Tool");
-                var mousePosition = pointAction.ReadValue<Vector2>();
-                mouseStartPosition = mousePosition;
             }
             if (selectScannerAction.WasPerformedThisFrame() && currentTool != ToolType.Scanner)
             {
@@ -72,11 +73,20 @@ public class GameController : MonoBehaviour
                 Debug.Log("Selected Tool: " + currentTool);
             }
 
-            if (currentTool == ToolType.None)
+            if (clickAction.WasPerformedThisFrame())
             {
-                var mousePosition = pointAction.ReadValue<Vector2>();
-                var camPoint = Camera.main.ScreenToWorldPoint(new Vector3(mousePosition.x, mousePosition.y, Camera.main.nearClipPlane));
-                plant.rotation = Quaternion.Euler(mousePosition.y, mousePosition.x, 0);
+                mouseStartPosition = pointAction.ReadValue<Vector2>();
+                plantStartRotation = plant.rotation;
+                Debug.Log("Mouse Clicked at: " + mouseStartPosition);
+            }
+
+            if (clickAction.ReadValue<float>() > 0)
+            {
+                if (currentTool == ToolType.None)
+                {
+                    var mousePosition = pointAction.ReadValue<Vector2>();
+                    plant.rotation = plantStartRotation * Quaternion.Euler(mousePosition.y - mouseStartPosition.y, mousePosition.x - mouseStartPosition.x, 0);
+                }
             }
         }
         else if (currentState == GameState.Paused)
