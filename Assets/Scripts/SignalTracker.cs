@@ -5,6 +5,7 @@ public enum SignalType
     Positive,
     Negative
 }
+[ExecuteInEditMode]
 public class Nitrogen : MonoBehaviour
 {
     public PlantProperty property = PlantProperty.Nitrogen;
