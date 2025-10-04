@@ -1,5 +1,4 @@
 {
-    "version": 1,
     "name": "InputSystem_Actions",
     "maps": [
         {
@@ -106,7 +105,7 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "SelectNitrogen",
+                    "name": "SelectSecond",
                     "type": "Button",
                     "id": "d80bc117-208d-464b-918a-fc2ebc0c09e9",
                     "expectedControlType": "",
@@ -530,7 +529,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "SelectNitrogen",
+                    "action": "SelectSecond",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

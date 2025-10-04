@@ -5,8 +5,9 @@ public enum SignalType
     Positive,
     Negative
 }
-[ExecuteInEditMode]
-public class Nitrogen : MonoBehaviour
+
+// [ExecuteInEditMode]
+public class SignalTracker : MonoBehaviour
 {
     public PlantProperty property = PlantProperty.Nitrogen;
     public SignalType signalType = SignalType.Negative;
@@ -18,8 +19,8 @@ public class Nitrogen : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        levelManager = FindObjectOfType<LevelManager>();
-        plant = transform.parent.GetComponent<Plant>();
+        levelManager = FindFirstObjectByType<LevelManager>();
+        plant = transform.parent.parent.GetComponent<Plant>();
         signal = transform.Find("Signal").gameObject;
         bark = transform.Find("Bark").gameObject;
     }
@@ -32,16 +33,9 @@ public class Nitrogen : MonoBehaviour
                              (signalType == SignalType.Positive && health == PropertyHealth.Healthy);
         if (shouldShowSignal)
         {
-            if (levelManager.IsSignalDiscovered(property))
-            {
-                bark.SetActive(true);
-                signal.SetActive(false);
-            }
-            else
-            {
-                bark.SetActive(false);
-                signal.SetActive(true);
-            }
+            var shouldBark = levelManager.IsSignalDiscovered(property);
+            bark.SetActive(shouldBark);
+            signal.SetActive(!shouldBark);
         }
         else if (!shouldShowSignal)
         {

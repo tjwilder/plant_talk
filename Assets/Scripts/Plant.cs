@@ -5,7 +5,9 @@ using System.Collections.Generic;
 public enum PlantProperty
 {
     Nitrogen,
-    Iron
+    Iron,
+    Potassium,
+    Magnesium
 }
 
 [System.Serializable]
@@ -50,23 +52,36 @@ public class Plant : MonoBehaviour
 {
     public List<Nutrient> nutrients = new List<Nutrient>();
 
-    void Update()
+    public bool AnyDead()
     {
         foreach (var nutrient in nutrients)
         {
             if (nutrient.amount < nutrient.neededAmount)
             {
                 // Plant is unhealthy
-                Debug.Log($"Plant is unhealthy due to lack of {nutrient.property}");
+                // Debug.Log($"Plant is unhealthy due to lack of {nutrient.property}");
             }
 
             if (nutrient.amount >= nutrient.deadAmount)
             {
                 // Plant dies
-                Debug.Log($"Plant has died due to excess of {nutrient.property}");
-                Destroy(gameObject);
+
+                return true;
             }
         }
+        return false;
+    }
+
+    public bool AllHealthy()
+    {
+        foreach (var nutrient in nutrients)
+        {
+            if (nutrient.amount < nutrient.neededAmount || nutrient.amount >= nutrient.deadAmount)
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     public PropertyHealth GetNutrientHealth(PlantProperty property)
@@ -75,12 +90,14 @@ public class Plant : MonoBehaviour
         return nutrient != null ? nutrient.GetHealthStatus() : PropertyHealth.Healthy;
     }
 
-    public void TryAddNutrients(WateringResource resource)
+    public bool TryAddNutrients(WateringResource resource)
     {
+        UnityEngine.Assertions.Assert.IsTrue(resource.nutrients.Count == 1);
         foreach (var kvp in resource.nutrients)
         {
             AddNutrient(kvp.Key, kvp.Value);
         }
+        return AnyDead();
     }
 
     public void AddNutrient(PlantProperty property, int amount)
@@ -88,6 +105,14 @@ public class Plant : MonoBehaviour
         var nutrient = nutrients.Find(n => n.property == property);
         if (nutrient != null)
         {
+            if (nutrient.property == PlantProperty.Nitrogen)
+            {
+                if (GetNutrientHealth(PlantProperty.Iron) != PropertyHealth.Healthy)
+                {
+                    Debug.Log($"Cannot add Nitrogen without the presense of enough Iron.");
+                    return;
+                }
+            }
             nutrient.amount += amount;
             Debug.Log($"Added {amount} of {property}. New amount: {nutrient.amount}");
         }

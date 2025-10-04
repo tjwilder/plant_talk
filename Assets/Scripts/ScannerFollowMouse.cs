@@ -21,7 +21,7 @@ public class ScannerFollowMouse : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Debug.Log(pointAction);
+        // Debug.Log(pointAction);
         Vector2 mousePosition = pointAction.ReadValue<Vector2>();
         var camPoint = Camera.main.ScreenToWorldPoint(new Vector3(mousePosition.x, mousePosition.y, scanner.position.z - Camera.main.transform.position.z));
         // Debug.Log(mousePosition);
