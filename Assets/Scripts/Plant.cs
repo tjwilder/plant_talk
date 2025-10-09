@@ -84,6 +84,12 @@ public class Plant : MonoBehaviour
         return true;
     }
 
+    public int GetNutrientAmount(PlantProperty property)
+    {
+        var nutrient = nutrients.Find(n => n.property == property);
+        return nutrient != null ? nutrient.amount : 0;
+    }
+
     public PropertyHealth GetNutrientHealth(PlantProperty property)
     {
         var nutrient = nutrients.Find(n => n.property == property);
@@ -92,6 +98,7 @@ public class Plant : MonoBehaviour
 
     public bool TryAddNutrients(WateringResource resource)
     {
+        // Assert just so we don't screw anything up at this point
         UnityEngine.Assertions.Assert.IsTrue(resource.nutrients.Count == 1);
         foreach (var kvp in resource.nutrients)
         {

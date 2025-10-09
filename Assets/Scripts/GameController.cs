@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -23,6 +24,7 @@ public class GameController : MonoBehaviour
 
     public GameObject activePlant;
     public List<GameObject> deadPlants;
+    public LevelManager levelManager;
 
     public GameState currentState = GameState.Playing;
     public ToolType currentTool = ToolType.Scanner;
@@ -42,14 +44,19 @@ public class GameController : MonoBehaviour
     public GameObject labNotebook;
     public GameObject testTubeRack;
 
+    public AudioSource audioSource;
+
     public List<PlantProperty> nutrientOrder = new List<PlantProperty> { PlantProperty.Nitrogen, PlantProperty.Iron, PlantProperty.Potassium, PlantProperty.Magnesium };
 
     private int currentNutrientIndex = 2;
     private bool rotatingNutrients = false;
+    private bool stopFlashing = false;
+    private bool addedNitrogen = false;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        levelManager = GetComponent<LevelManager>();
         var inputActionAsset = InputSystem.actions;
         pointAction = inputActionAsset.FindAction("Point");
         clickAction = inputActionAsset.FindAction("Click");
@@ -66,6 +73,10 @@ public class GameController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (activePlant == null)
+        {
+            return;
+        }
         if (currentState == GameState.Playing)
         {
             if (unselectToolAction.WasPerformedThisFrame() && currentTool != ToolType.None)
@@ -78,7 +89,9 @@ public class GameController : MonoBehaviour
             {
                 DisableAll();
                 currentTool = ToolType.Scanner;
-                scanner.SetActive(true);
+                var scannerComponent = scanner.GetComponent<ScannerFollowMouse>();
+                scannerComponent.Enable();
+                stopFlashing = true;
                 Debug.Log("Selected Tool: " + currentTool);
             }
             if (selectSecondAction.WasPerformedThisFrame() && currentTool != ToolType.WateringCan)
@@ -132,6 +145,7 @@ public class GameController : MonoBehaviour
                                 { nutrientOrder[currentNutrientIndex], 1 },
                             }
                         });
+                        addedNitrogen = true;
                     }));
                     return;
                 }
@@ -168,7 +182,8 @@ public class GameController : MonoBehaviour
 
     public void DisableAll()
     {
-        scanner.SetActive(false);
+        var scannerComponent = scanner.GetComponent<ScannerFollowMouse>();
+        scannerComponent.Disable();
     }
 
     public IEnumerator PoofOut(Transform obj, float duration, Action callback = null)
@@ -208,18 +223,102 @@ public class GameController : MonoBehaviour
         callback?.Invoke();
     }
 
-    public void StartDialogue(List<string> messages, Action callback = null)
+    public void StartDialogue(Func<string, DialogueLine> translateMessage, List<string> messages, Action callback = null)
     {
-        StartCoroutine(ShowDialogue(messages, callback));
+        StartCoroutine(ShowDialogue(translateMessage, messages, callback));
     }
 
-    private IEnumerator ShowDialogue(List<string> messages, Action callback)
+    private IEnumerator ShowDialogue(Func<string, DialogueLine> translateMessage, List<string> messages, Action callback)
     {
         currentState = GameState.Dialogue;
         dialogueBox.SetActive(true);
-        foreach (var msg in messages)
+        foreach (var msgId in messages)
         {
-            dialogueBox.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = msg;
+            var msg = translateMessage(msgId);
+            // Skip empty messages
+            if (msg == null)
+            {
+                if (msgId == "highlightScanner")
+                {
+                    HighlightScanner();
+                    currentState = GameState.Playing;
+                    while (!currentTool.Equals(ToolType.Scanner))
+                    {
+                        yield return null;
+                    }
+                    continue;
+                }
+                else if (msgId == "progressLabNotebook")
+                {
+                    // TODO: Actually progress the notebook
+                    HighlightLabNotebook();
+                    // TODO: Only play audio while adding to the notebook
+                    audioSource.time = 0.1f;
+                    audioSource.Play();
+                    yield return new WaitForSeconds(1.0f);
+                    audioSource.Stop();
+                    continue;
+                }
+                else if (msgId == "highlightChemicals")
+                {
+                    // HighlightChemicals();
+                    continue;
+                }
+                else if (msgId == "waitForAddNitrogen")
+                {
+                    addedNitrogen = false;
+                    currentState = GameState.Playing;
+                    while (!addedNitrogen)
+                    {
+                        yield return null;
+                    }
+                    continue;
+                }
+                else if (msgId == "waitForAddIron")
+                {
+                    currentState = GameState.Playing;
+                    var plantComponent = activePlant.GetComponent<Plant>();
+                    var originalIron = plantComponent.GetNutrientAmount(PlantProperty.Iron);
+                    while (true)
+                    {
+                        if (plantComponent.GetNutrientAmount(PlantProperty.Iron) > originalIron)
+                        {
+                            break;
+                        }
+                        yield return null;
+                    }
+                    continue;
+                }
+                else if (msgId == "waitForScan")
+                {
+                    currentState = GameState.Playing;
+                    // TODO: This should maybe be a more general action, but can only handle the FIRST SCAN AT DEFAULT ROTATION for now
+                    while (true)
+                    {
+                        var mousePosition = pointAction.ReadValue<Vector2>();
+                        // Debug.Log(mousePosition);
+                        // Check to see if it's in the middle 1/3 and top 1/4 of the screen
+                        if (mousePosition.x > Screen.width / 3 && mousePosition.x < Screen.width * 2 / 3 &&
+                            mousePosition.y > Screen.height * 3 / 4)
+                        {
+                            break;
+                        }
+                        yield return null;
+                    }
+                    continue;
+                }
+                else if (msgId == "startGame")
+                {
+                    levelManager.levelNumber = 1;
+                    levelManager.SetupLevel();
+                    continue;
+                }
+                Debug.LogWarning("Dialogue line not found: " + msgId);
+                continue;
+            }
+
+            // TODO: character name here
+            dialogueBox.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = msg.line;
             // Make sure we always wait at least one frame to continue
             yield return null;
             while (!clickAction.WasPerformedThisFrame())
@@ -328,5 +427,122 @@ public class GameController : MonoBehaviour
         }
 
         callback?.Invoke();
+    }
+
+    public void HighlightScanner()
+    {
+        stopFlashing = false;
+        var component = scanner.transform.Find("Scanner");
+        var renderer = component.GetComponent<MeshRenderer>();
+        StartCoroutine(FlashColor(renderer, Color.yellow, 1.5f, 5));
+    }
+
+    public IEnumerator FlashColor(MeshRenderer renderer, Color flashColor, float duration, int times)
+    {
+        // The 3rd material is the one to change
+        Color originalColor = renderer.materials[2].color;
+        // Get the emission as well
+        Color originalEmission = renderer.materials[2].GetColor("_EmissionColor");
+        float halfDuration = duration / 2f;
+        float elapsed = 0f;
+        for (int i = 0; i < times; i++)
+        {
+            elapsed = 0f;
+            while (elapsed < halfDuration)
+            {
+                if (TryStopFlashing(renderer, originalColor, originalEmission))
+                {
+                    yield break;
+                }
+                renderer.materials[2].color = Color.Lerp(originalColor, flashColor, elapsed / halfDuration);
+                renderer.materials[2].SetColor("_EmissionColor", Color.Lerp(originalEmission, flashColor, elapsed / halfDuration));
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            elapsed = 0f;
+            while (elapsed < halfDuration)
+            {
+                if (TryStopFlashing(renderer, originalColor, originalEmission))
+                {
+                    yield break;
+                }
+                renderer.materials[2].color = Color.Lerp(flashColor, originalColor, elapsed / halfDuration);
+                renderer.materials[2].SetColor("_EmissionColor", Color.Lerp(flashColor, originalEmission, elapsed / halfDuration));
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            renderer.materials[2].color = originalColor;
+            renderer.materials[2].SetColor("_EmissionColor", originalEmission);
+            yield return new WaitForSeconds(0.5f);
+        }
+    }
+
+    public void HighlightLabNotebook()
+    {
+        stopFlashing = false;
+        var component = labNotebook.transform.parent;
+        var renderer = component.GetComponent<Image>();
+        StartCoroutine(FlashPanelColor(renderer, Color.yellow, 1.5f, 2));
+    }
+
+    public IEnumerator FlashPanelColor(UnityEngine.UI.Image image, Color flashColor, float duration, int times)
+    {
+        Color originalColor = image.color;
+        float halfDuration = duration / 2f;
+        float elapsed = 0f;
+        for (int i = 0; i < times; i++)
+        {
+            elapsed = 0f;
+            while (elapsed < halfDuration)
+            {
+                if (TryStopPanelFlashing(image, originalColor))
+                {
+                    yield break;
+                }
+                image.color = Color.Lerp(originalColor, flashColor, elapsed / halfDuration);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            elapsed = 0f;
+            while (elapsed < halfDuration)
+            {
+                if (TryStopPanelFlashing(image, originalColor))
+                {
+                    yield break;
+                }
+                image.color = Color.Lerp(flashColor, originalColor, elapsed / halfDuration);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            image.color = originalColor;
+            yield return new WaitForSeconds(0.5f);
+        }
+    }
+
+    private bool TryStopFlashing(MeshRenderer renderer, Color originalColor, Color originalEmission)
+    {
+        if (stopFlashing)
+        {
+            stopFlashing = false;
+            renderer.materials[2].color = originalColor;
+            renderer.materials[2].SetColor("_EmissionColor", originalEmission);
+            return true;
+        }
+        return false;
+    }
+
+    private bool TryStopPanelFlashing(UnityEngine.UI.Image image, Color originalColor)
+    {
+        if (stopFlashing)
+        {
+            stopFlashing = false;
+            image.color = originalColor;
+            return true;
+        }
+        return false;
     }
 }

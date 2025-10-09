@@ -19,14 +19,20 @@ public class LevelHint
 }
 
 [System.Serializable]
+public class DialogueLine
+{
+    public string lineId;
+    public string characterName;
+    public string line;
+}
+
+[System.Serializable]
 public class LevelDialogue
 {
     public List<string> startDialogue;
     public List<string> endDialogue;
     public List<LevelHint> hints;
     public string labNotebookText;
-
-    // TODO: Localization for the text here
 }
 
 [System.Serializable]
@@ -39,7 +45,8 @@ public class LevelPlant
 public class LevelManager : MonoBehaviour
 {
     public GameController gameController;
-    public int levelNumber = 1;
+    public Dictionary<string, DialogueLine> localization;
+    public int levelNumber = 0;
     private bool levelCompleted = false;
     public int levelAttempts = 0;
     // For future work, we will use a list, but for now there's only one plant
@@ -50,12 +57,57 @@ public class LevelManager : MonoBehaviour
 
     public void Start()
     {
+        LoadLocalization();
         SetupLevel();
+    }
+
+    public void LoadLocalization()
+    {
+        // Loads a .tsv (Tab Separated Values) file from Resources and parses it into the localization dictionary
+        // But Unity has issues with .tsv files, so we save it as .txt
+        localization = new Dictionary<string, DialogueLine>();
+        TextAsset localizationFile = Resources.Load<TextAsset>("Narrative Design - RobotMessages");
+        if (localizationFile == null)
+        {
+            Debug.LogError("Localization file not found!");
+            return;
+        }
+        string[] lines = localizationFile.text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        foreach (string line in lines)
+        {
+
+            string[] parts = line.Split(new[] { '\t' }, StringSplitOptions.None);
+            if (parts.Length >= 7)
+            {
+                string speaker = parts[1].Trim();
+                string dialogue = parts[2].Trim();
+                string key = parts[6].Trim();
+                if (key == "" || dialogue == "")
+                    continue;
+                localization[key] = new DialogueLine
+                {
+                    characterName = speaker,
+                    lineId = key,
+                    line = dialogue,
+                };
+            }
+        }
+        Debug.Log("Loaded " + localization.Count + " localization entries.");
+    }
+
+    public DialogueLine GetDialogue(string lineId)
+    {
+        if (localization.ContainsKey(lineId))
+        {
+            return localization[lineId];
+        }
+        return null;
     }
 
     public void Update()
     {
         if (levelCompleted) return;
+        if (gameController.activePlant == null) return;
         if (gameController.activePlant.GetComponent<Plant>().AllHealthy())
         {
             LevelResult(true);
@@ -75,7 +127,7 @@ public class LevelManager : MonoBehaviour
             Debug.Log("Completed level " + levelNumber);
             gameController.activePlant.transform.Find("Plant Container/Plant Models/Unhealthy").gameObject.SetActive(false);
             gameController.activePlant.transform.Find("Plant Container/Plant Models/Healthy").gameObject.SetActive(true);
-            gameController.StartDialogue(levelDialogues[levelNumber - 1].endDialogue, () =>
+            gameController.StartDialogue(GetDialogue, levelDialogues[levelNumber].endDialogue, () =>
             {
                 Debug.Log("Finalized level " + levelNumber);
                 levelNumber++;
@@ -120,18 +172,18 @@ public class LevelManager : MonoBehaviour
         PositionDeadPlants();
         if (!isReset)
         {
-            gameController.WriteToLabNotebook(levelDialogues[levelNumber - 1].labNotebookText, () =>
+            gameController.WriteToLabNotebook(levelDialogues[levelNumber].labNotebookText, () =>
             {
-                gameController.StartDialogue(levelDialogues[levelNumber - 1].startDialogue);
+                gameController.StartDialogue(GetDialogue, levelDialogues[levelNumber].startDialogue);
             });
         }
         else
         {
-            foreach (var hint in levelDialogues[levelNumber - 1].hints)
+            foreach (var hint in levelDialogues[levelNumber].hints)
             {
                 if (levelAttempts == hint.deadPlants)
                 {
-                    gameController.StartDialogue(new List<string> { hint.hint });
+                    gameController.StartDialogue(GetDialogue, new List<string> { hint.hint });
                     break;
                 }
             }
