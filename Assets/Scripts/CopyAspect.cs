@@ -5,6 +5,14 @@ public class CopyAspect : MonoBehaviour
 {
     public Camera sourceCamera;
     public Transform texturePlane;
+    public float scaleFactor = 1.05f;
+    float height;
+
+    void Start()
+    {
+        // height = texturePlane.localScale.z;
+        height = 1.0f;
+    }
 
     // Update is called once per frame
     void Update()
@@ -14,8 +22,7 @@ public class CopyAspect : MonoBehaviour
         thisCamera.aspect = aspectRatio;
         if (texturePlane != null)
         {
-            float height = texturePlane.localScale.y;
-            texturePlane.localScale = new Vector3(height * aspectRatio, height, texturePlane.localScale.z);
+            texturePlane.localScale = new Vector3(scaleFactor * height * aspectRatio, texturePlane.localScale.y, scaleFactor * height);
         }
     }
 }

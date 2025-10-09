@@ -1,0 +1,66 @@
+Dialogue number	Dialogue Summary					
+1.a	Bot-ne introduces themselves and shows notebook UI					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+Start of the game	BOT-NE	Green greetings to ya! I'm BOT-NE, the cutest lab assistant ever made!				1.a.1
+	BOT-NE	I've got your lab table all set up. You remembered your notebook, right?	Gameplay: flashing UI prompt to open and close notebook			1.a.2
+Dialogue number	Dialogue Summary					
+1.b	Bot-ne reinforces notetaking, shows the first plant					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+	BOT-NE	Remember, scientists take notes about everything they observe.				1.b.1
+	BOT-NE	Like how I'm just the pluckiest little bot you've ever seen!				1.b.2
+	BOT-NE	Jokes aside, lets get to the real science. Come see the first plant.	Gameplay:first plant appears on screen			1.b.3
+Dialogue number	Dialogue Summary					
+2.a	Bot-ne introduces plant 1 and scanner					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+	BOT-NE	This my friend zea mays. She thinks it's corny when I use her full name.				2.a.1
+	BOT-NE	She's trying to talk to you, but I take it you don't speak plant, right?				2.a.2
+	BOT-NE	Luckily, I've got the next best thing. Wrap your twigs around this.	Gameplay: UI element flashes, players can control scanner. Hint sequence 1.a plays			2.a.3
+Dialogue number	Dialogue Summary					
+2.b	Bot-ne introduces chemicals					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+Once the last hint of hints 1.a plays	BOT-NE	Zea is telling us she wants something.				2.b.1
+	BOT-NE	To find out what, we've got to the scientific method.				2.b.2
+	BOT-NE	Try adding these chemicals. See if the signals change.	Gameplay: player can access chemical tray. Hint sequence 1.b plays			2.b.3
+Dialogue number	Dialogue Summary					
+2.c	Bot-ne reinforces nitrogen signal absence					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+Once correct hint chemical hint of hint 1.b plays	BOT-NE	Now that's one vivacious corn plant!				2.c.1
+	BOT-NE	Scan zea mays again, notice anything?	Gameplay:player scans plant again, then next dialogue plays			2.c.2
+Player finishes scanning	BOT-NE	When plants don't need nitrogen, they stop producing this signal				2.c.3
+	BOT-NE	That's called a negative signal. It says when something's missing.				2.c.4
+	BOT-NE	What are you waiting for? Write that down! This is real science! 	Gameplay: UI journal element flashes, players open notebook which contains nitrogen signal rule			2.c.5
+Dialogue number	Dialogue Summary					
+2.d	Bot-ne summarizes lesson					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+Once players close notebook	BOT-NE	You've completed your first experiment! Congrats, seedling!				2.d.1
+	BOT-NE	Now you know that red signals is plant talk for "nitrogen, please!"				2.d.2
+	BOT-NE	Let's go see what some of the other plants are saying. Bet it's real sappy.	Gameplay: transition to next plant			2.d.3
+Dialogue number	Dialogue Summary					
+3.a	Bot-ne summarizes lesson					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+	BOT-NE	Solanum lycopersicum. They're a little bashful, always blushing.				3.a.1
+	BOT-NE	What are they saying they need?	Gameplay: player scans and can add chemicals.			3.a.2
+Dialogue number	Dialogue Summary					
+3.b	Bot-ne points out that there are two signals					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+Player tries to add just nitrogen a few times unsuccessfully.	BOT-NE	This tomato does need nitrogen, but the signal's not changing.				3.b.1
+	BOT-NE	This means the plant can't absorb nitrogen. Yet.				3.b.2
+	BOT-NE	This plant's chattier than the last one. Did you see any other signals?	Gameplay: player scans plant again.		Is Iron a positive or negative signal? In the current alpha version it's positive so the second plant is _less_ chatty because it's missing the iron symbol. So it would be more like "I feel like something's missing here! See, there's that other signal from your lab notebook!"	3.b.3
+Dialogue number	Dialogue Summary					
+3.c	Bot-ne explains about positive signals					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+Player successfully adds iron.	BOT-NE	You added the right chemical, but the signal's not gone.				3.c.1
+	BOT-NE	Don't worry, that's because this is a positive signal.				3.c.2
+	BOT-NE	The tomato is saying "I have enough iron".				3.c.3
+	BOT-NE	You know the drill. Notebook! For science!	Gameplay: notebook UI flashes, new entry added.			3.c.4
+Dialogue number	Dialogue Summary					
+3.d	Bot-ne reinforces interdependent signals					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+Player successfully adds nitrogen	BOT-NE	I'm impressed, seedling! This is way above intern-level stuff.				3.d.1
+	BOT-NE	The tomato was communicating with themselves				3.d.2
+	BOT-NE	They needed iron before they could absorb nitrogen.				3.d.3
+	BOT-NE	The tomato waited for the "I have iron" signal.				3.d.4
+	BOT-NE	Only then did they absorb the nitrogen you gave it.				3.d.5
+	BOT-NE	And then stopped saying "I don't have nitrogen".				3.d.6
+	BOT-NE	So, plant signals can be interdependent. 				3.d.7
+	BOT-NE	Which is science talk for "plants talk to themselves"! Notebook!	Gameplay: notebook UI flashes, new entry added.			3.d.8
