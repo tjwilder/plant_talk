@@ -36,6 +36,14 @@ public class LevelDialogue
 }
 
 [System.Serializable]
+public class EndDialogue
+{
+    public int maxAttempts;
+    public List<string> dialogue;
+    public string title;
+}
+
+[System.Serializable]
 public class LevelPlant
 {
     public int levelNumber;
@@ -54,6 +62,7 @@ public class LevelManager : MonoBehaviour
     public SignalLevel[] signalLevels;
     public List<LevelDialogue> levelDialogues;
     public List<LevelPlant> levelPlants;
+    public List<EndDialogue> endDialogues;
 
     private bool step = false;
     private Coroutine hintCoroutine = null;
@@ -76,9 +85,9 @@ public class LevelManager : MonoBehaviour
                 string speaker = parts[1].Trim();
                 string dialogue = parts[2].Trim();
                 string key = parts[6].Trim();
-                if (key == "" || dialogue == "")
+                if (key == "" || dialogue == "" || key == "ID")
                     continue;
-                if (localization.Contains(key))
+                if (localization.ContainsKey(key))
                 {
                     Debug.LogError("Loaded key " + key + " Multiple times; overwriting with most recent");
                 }
@@ -150,11 +159,23 @@ public class LevelManager : MonoBehaviour
             {
                 Debug.Log("Finalized level " + levelNumber);
                 // If it's the last level, we'll add the last screen
-                if (levelNumber == levelDialogue.Count - 1)
+                if (levelNumber == levelDialogues.Count - 1)
                 {
-                    // Say congratulations!
-                    // Show end screen
-                    // Set title based on levelAttempts
+                    foreach (var endDialogue in endDialogues)
+                    {
+                        if (levelAttempts <= endDialogue.maxAttempts)
+                        {
+                            // Say congratulations!
+                            gameController.StartDialogue(GetDialogue, endDialogue.dialogue, () =>
+                            {
+                                // Show end screen
+                                // Set title based on levelAttempts
+                                // gameController.ShowEndScreen(endDialogue.title);
+                            });
+                            break;
+                        }
+                    }
+
                     return;
                 }
                 levelNumber++;
@@ -315,10 +336,11 @@ public class LevelManager : MonoBehaviour
         float elapsed = 0.0f;
         while (elapsed < hintDelay)
         {
-            elapsed != Time.deltaTime;
-            if (gameController.addedNitrogen)
+            elapsed += Time.deltaTime;
+            if (gameController.didScan)
             {
-                yield return gameController.PlayHint("h.1.a.4");
+                yield return gameController.PlayHint(GetDialogue("h.1.a.4"));
+                yield return new WaitForSeconds(0.25f);
                 yield break;
             }
             yield return null;
@@ -327,10 +349,11 @@ public class LevelManager : MonoBehaviour
         elapsed = 0.0f;
         while (elapsed < hintDelay)
         {
-            elapsed != Time.deltaTime;
+            elapsed += Time.deltaTime;
             if (gameController.didScan)
             {
-                yield return gameController.PlayHint("h.1.a.4");
+                yield return gameController.PlayHint(GetDialogue("h.1.a.4"));
+                yield return new WaitForSeconds(0.25f);
                 yield break;
             }
             yield return null;
@@ -340,7 +363,8 @@ public class LevelManager : MonoBehaviour
         {
             if (gameController.didScan)
             {
-                yield return gameController.PlayHint("h.1.a.4");
+                yield return gameController.PlayHint(GetDialogue("h.1.a.4"));
+                yield return new WaitForSeconds(0.25f);
                 yield break;
             }
             yield return null;
@@ -352,18 +376,18 @@ public class LevelManager : MonoBehaviour
         yield return gameController.PlayHint(GetDialogue("h.1.b.1"));
         var messages = new List<string> { "h.1.b.2", "h.1.b.3", "h.1.b.4", "h.1.b.5" };
         var ind = 0;
-        gameController.addedNutrient = false;
         while (true)
         {
             if (gameController.addedNitrogen)
             {
-                yield return gameController.PlayHint("h.1.b.6");
+                yield return gameController.PlayHint(GetDialogue("h.1.b.6"));
+                yield return new WaitForSeconds(0.25f);
                 yield break;
             }
             if (gameController.addedNutrient && ind < 4)
             {
                 gameController.addedNutrient = false;
-                yield return gameController.PlayHint(messages[ind++]);
+                yield return gameController.PlayHint(GetDialogue(messages[ind++]));
             }
             yield return null;
         }
@@ -376,9 +400,9 @@ public class LevelManager : MonoBehaviour
         {
             if (gameController.didScanSecondary)
             {
-                yield return gameController.PlayHint("h.2.b.1");
-                yield return WaitForSeconds(1.0f);
-                yield return gameController.PlayHint("h.2.b.2");
+                yield return gameController.PlayHint(GetDialogue("h.2.b.1"));
+                yield return new WaitForSeconds(1.0f);
+                yield return gameController.PlayHint(GetDialogue("h.2.b.2"));
                 yield break;
             }
             yield return null;

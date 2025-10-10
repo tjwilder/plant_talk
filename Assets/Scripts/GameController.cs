@@ -49,12 +49,13 @@ public class GameController : MonoBehaviour
     public AudioSource audioSource;
 
     public List<PlantProperty> nutrientOrder = new List<PlantProperty> { PlantProperty.Nitrogen, PlantProperty.Iron, PlantProperty.Potassium, PlantProperty.Magnesium, };
-    public Dictionary<PlantProperty, string> nutrientCards = new Dictionary<PlantProperty, string> {
+    public Dictionary<PlantProperty, string> nutrientCards = new Dictionary<PlantProperty, string>
+    {
         [PlantProperty.Nitrogen] = "Nitrogen is always needed!",
         [PlantProperty.Iron] = "Iron helps plants drink up Nitrogen",
         [PlantProperty.Potassium] = "Banana!",
         /* [PlantProperty.] = "Nitrogen is always needed!", */
-        [PlantProperty.Phosphorus] = "Symptoms of too little: Bottom of leaf may turn purple” ,
+        [PlantProperty.Phosphorus] = "Symptoms of too little: Bottom of leaf may turn purple",
         [PlantProperty.Magnesium] = "Helps plants take up nutrients",
         [PlantProperty.Calcium] = "Important for making new cells strong",
     };
@@ -227,7 +228,7 @@ public class GameController : MonoBehaviour
                     if (levelManager.levelNumber >= 3)
                     {
                         nutrientInfoBox.SetActive(true);
-                        nutrientInfoBox.transform.Find("Text").GetComponent<TMPro.TextMeshProUGUI>().text = nutrientInfo[targetProperty];
+                        nutrientInfoBox.transform.Find("Text").GetComponent<TMPro.TextMeshProUGUI>().text = nutrientCards[targetProperty];
                     }
                 }));
             }
@@ -305,7 +306,6 @@ public class GameController : MonoBehaviour
     private IEnumerator ShowDialogue(Func<string, DialogueLine> translateMessage, List<string> messages, Action callback)
     {
         currentState = GameState.Dialogue;
-        dialogueBox.SetActive(true);
         foreach (var msgId in messages)
         {
             var msg = translateMessage(msgId);
@@ -338,6 +338,7 @@ public class GameController : MonoBehaviour
                 else if (msgId == "waitForAddNitrogen")
                 {
                     addedNitrogen = false;
+
                     currentState = GameState.Playing;
                     while (!addedNitrogen)
                     {
@@ -370,6 +371,18 @@ public class GameController : MonoBehaviour
                         yield return null;
                     }
                 }
+                else if (msgId == "waitForSecondaryScan")
+                {
+                    currentState = GameState.Playing;
+                    // TODO: This should maybe be a more general action, but can only handle the FIRST SCAN AT DEFAULT ROTATION for now
+                    didScanSecondary = false;
+                    while (true)
+                    {
+                        if (didScanSecondary)
+                            break;
+                        yield return null;
+                    }
+                }
                 else if (msgId == "startGame")
                 {
                     levelManager.levelNumber = 1;
@@ -392,17 +405,21 @@ public class GameController : MonoBehaviour
                     Debug.LogWarning("Dialogue line not found: " + msgId);
                 }
             }
-
-            // TODO: character image here or delete the image
-            var character = dialogueBox.transform.Find("Text_Box/Character").GetComponent<TMPro.TextMeshProUGUI>();
-            var dialogue = dialogueBox.transform.Find("Text_Box/Dialogue").GetComponent<TMPro.TextMeshProUGUI>();
-            character.text = msg.characterName;
-            dialogue.text = msg.line;
-            // Make sure we always wait at least one frame to continue
-            yield return null;
-            while (!clickAction.WasPerformedThisFrame())
+            else
             {
+                dialogueBox.SetActive(true);
+                // TODO: character image here or delete the image
+                var character = dialogueBox.transform.Find("Text_Box/Character").GetComponent<TMPro.TextMeshProUGUI>();
+                var dialogue = dialogueBox.transform.Find("Text_Box/Dialogue").GetComponent<TMPro.TextMeshProUGUI>();
+                character.text = msg.characterName;
+                dialogue.text = msg.line;
+                // Make sure we always wait at least one frame to continue
                 yield return null;
+                while (!clickAction.WasPerformedThisFrame())
+                {
+                    yield return null;
+                }
+                dialogueBox.SetActive(false);
             }
         }
         dialogueBox.SetActive(false);
@@ -636,19 +653,24 @@ public class GameController : MonoBehaviour
         {
             StopCoroutine(hintPlaying);
         }
-        disposeHint = null;
+        if (disposeHint != null)
+        {
+            StopCoroutine(disposeHint);
+            disposeHint = null;
+        }
         return StartCoroutine(PlayHintInternal(hint));
     }
 
     public IEnumerator PlayHintInternal(DialogueLine hint)
     {
         var message = "";
-        var hintText = hintBox.GetComponent<TMPro.TextMeshProUGUI>();
-        foreach (var c in dialogueLine.line)
+        hintBox.SetActive(true);
+        var hintText = hintBox.transform.Find("Dialogue").GetComponent<TMPro.TextMeshProUGUI>();
+        foreach (var c in hint.line)
         {
             message += c;
             hintText.text = message;
-            yield return WaitForSeconds(hintCharacterDelay);
+            yield return new WaitForSeconds(hintCharacterDelay);
         }
         hintPlaying = null;
         // Start the destruction coroutine but don't wait for it in case we want to play another hint
@@ -657,7 +679,7 @@ public class GameController : MonoBehaviour
 
     public IEnumerator DisposeHint()
     {
-        yield return WaitForSeconds(hintDuration);
+        yield return new WaitForSeconds(hintDuration);
         hintBox.SetActive(false);
     }
 }
