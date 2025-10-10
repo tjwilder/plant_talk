@@ -55,24 +55,18 @@ public class LevelManager : MonoBehaviour
     public List<LevelDialogue> levelDialogues;
     public List<LevelPlant> levelPlants;
 
+    private bool step = false;
+    private Coroutine hintCoroutine = null;
+
     public void Start()
     {
         LoadLocalization();
         SetupLevel();
     }
 
-    public void LoadLocalization()
+    public void LoadLocalizationText(string text)
     {
-        // Loads a .tsv (Tab Separated Values) file from Resources and parses it into the localization dictionary
-        // But Unity has issues with .tsv files, so we save it as .txt
-        localization = new Dictionary<string, DialogueLine>();
-        TextAsset localizationFile = Resources.Load<TextAsset>("Narrative Design - RobotMessages");
-        if (localizationFile == null)
-        {
-            Debug.LogError("Localization file not found!");
-            return;
-        }
-        string[] lines = localizationFile.text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        string[] lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
         foreach (string line in lines)
         {
 
@@ -84,6 +78,10 @@ public class LevelManager : MonoBehaviour
                 string key = parts[6].Trim();
                 if (key == "" || dialogue == "")
                     continue;
+                if (localization.Contains(key))
+                {
+                    Debug.LogError("Loaded key " + key + " Multiple times; overwriting with most recent");
+                }
                 localization[key] = new DialogueLine
                 {
                     characterName = speaker,
@@ -93,6 +91,27 @@ public class LevelManager : MonoBehaviour
             }
         }
         Debug.Log("Loaded " + localization.Count + " localization entries.");
+    }
+
+    public void LoadLocalization()
+    {
+        // Loads a .tsv (Tab Separated Values) file from Resources and parses it into the localization dictionary
+        // But Unity has issues with .tsv files, so we save it as .txt
+        localization = new Dictionary<string, DialogueLine>();
+        var localizationFile = Resources.Load<TextAsset>("Narrative Design - RobotMessages");
+        if (localizationFile == null)
+        {
+            Debug.LogError("Localization file not found!");
+            return;
+        }
+        LoadLocalizationText(localizationFile.text);
+        localizationFile = Resources.Load<TextAsset>("Narrative Design - RobotHints");
+        if (localizationFile == null)
+        {
+            Debug.LogError("Localization file not found!");
+            return;
+        }
+        LoadLocalizationText(localizationFile.text);
     }
 
     public DialogueLine GetDialogue(string lineId)
@@ -130,6 +149,14 @@ public class LevelManager : MonoBehaviour
             gameController.StartDialogue(GetDialogue, levelDialogues[levelNumber].endDialogue, () =>
             {
                 Debug.Log("Finalized level " + levelNumber);
+                // If it's the last level, we'll add the last screen
+                if (levelNumber == levelDialogue.Count - 1)
+                {
+                    // Say congratulations!
+                    // Show end screen
+                    // Set title based on levelAttempts
+                    return;
+                }
                 levelNumber++;
                 levelAttempts = 0;
                 GameObject.Destroy(gameController.activePlant);
@@ -239,4 +266,125 @@ public class LevelManager : MonoBehaviour
         Debug.LogWarning("Signal is not monitored but cannot be discovered: " + property);
         return revealAllSignals;
     }
+
+    public float hintDelay = 5f;
+
+    public void HintStep()
+    {
+        step = true;
+    }
+
+    public void CancelHint()
+    {
+        if (hintCoroutine != null)
+        {
+            StopCoroutine(hintCoroutine);
+        }
+    }
+
+    public void StartHintChain1a()
+    {
+        if (hintCoroutine != null)
+        {
+            StopCoroutine(hintCoroutine);
+        }
+        hintCoroutine = StartCoroutine(HintChain1a());
+    }
+
+    public void StartHintChain1b()
+    {
+        if (hintCoroutine != null)
+        {
+            StopCoroutine(hintCoroutine);
+        }
+        hintCoroutine = StartCoroutine(HintChain1b());
+    }
+
+    public void StartHintChain2b()
+    {
+        if (hintCoroutine != null)
+        {
+            StopCoroutine(hintCoroutine);
+        }
+        hintCoroutine = StartCoroutine(HintChain2b());
+    }
+
+    private IEnumerator HintChain1a()
+    {
+        yield return gameController.PlayHint(GetDialogue("h.1.a.1"));
+        float elapsed = 0.0f;
+        while (elapsed < hintDelay)
+        {
+            elapsed != Time.deltaTime;
+            if (gameController.addedNitrogen)
+            {
+                yield return gameController.PlayHint("h.1.a.4");
+                yield break;
+            }
+            yield return null;
+        }
+        yield return gameController.PlayHint(GetDialogue("h.1.a.2"));
+        elapsed = 0.0f;
+        while (elapsed < hintDelay)
+        {
+            elapsed != Time.deltaTime;
+            if (gameController.didScan)
+            {
+                yield return gameController.PlayHint("h.1.a.4");
+                yield break;
+            }
+            yield return null;
+        }
+        yield return gameController.PlayHint(GetDialogue("h.1.a.3"));
+        while (true)
+        {
+            if (gameController.didScan)
+            {
+                yield return gameController.PlayHint("h.1.a.4");
+                yield break;
+            }
+            yield return null;
+        }
+    }
+
+    private IEnumerator HintChain1b()
+    {
+        yield return gameController.PlayHint(GetDialogue("h.1.b.1"));
+        var messages = new List<string> { "h.1.b.2", "h.1.b.3", "h.1.b.4", "h.1.b.5" };
+        var ind = 0;
+        gameController.addedNutrient = false;
+        while (true)
+        {
+            if (gameController.addedNitrogen)
+            {
+                yield return gameController.PlayHint("h.1.b.6");
+                yield break;
+            }
+            if (gameController.addedNutrient && ind < 4)
+            {
+                gameController.addedNutrient = false;
+                yield return gameController.PlayHint(messages[ind++]);
+            }
+            yield return null;
+        }
+    }
+
+    private IEnumerator HintChain2b()
+    {
+        gameController.didScanSecondary = false;
+        while (true)
+        {
+            if (gameController.didScanSecondary)
+            {
+                yield return gameController.PlayHint("h.2.b.1");
+                yield return WaitForSeconds(1.0f);
+                yield return gameController.PlayHint("h.2.b.2");
+                yield break;
+            }
+            yield return null;
+        }
+    }
+
+    // TODO: Handle random hints for non-action or adding the wrong chemical
+    // Maybe just treat them as "Level 3" things for now since there's existing hints in the first two
 }

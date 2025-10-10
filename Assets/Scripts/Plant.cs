@@ -7,7 +7,9 @@ public enum PlantProperty
     Nitrogen,
     Iron,
     Potassium,
-    Magnesium
+    Magnesium,
+    Phosphorus,
+    Calcium
 }
 
 [System.Serializable]
