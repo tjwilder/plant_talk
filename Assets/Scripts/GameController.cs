@@ -81,17 +81,13 @@ public class GameController : MonoBehaviour
         {
             if (unselectToolAction.WasPerformedThisFrame() && currentTool != ToolType.None)
             {
-                DisableAll();
+                SwitchTool(ToolType.None);
                 currentTool = ToolType.None;
                 Debug.Log("Unselected Tool");
             }
             if (selectScannerAction.WasPerformedThisFrame() && currentTool != ToolType.Scanner)
             {
-                DisableAll();
-                currentTool = ToolType.Scanner;
-                var scannerComponent = scanner.GetComponent<ScannerFollowMouse>();
-                scannerComponent.Enable();
-                stopFlashing = true;
+                SwitchTool(ToolType.Scanner);
                 Debug.Log("Selected Tool: " + currentTool);
             }
             if (selectSecondAction.WasPerformedThisFrame() && currentTool != ToolType.WateringCan)
@@ -112,6 +108,28 @@ public class GameController : MonoBehaviour
 
             if (clickAction.WasPerformedThisFrame())
             {
+                // Did they click on the scanner?
+                var ray = Camera.main.ScreenPointToRay(pointAction.ReadValue<Vector2>());
+                RaycastHit hit;
+                bool didHit = false;
+                if (Physics.Raycast(ray, out hit, 100.0f, LayerMask.GetMask("Default")))
+                {
+                    Debug.Log("Hit: " + hit.transform.gameObject.name);
+                    if (hit.transform.gameObject.name == "Scanner Shelf")
+                    {
+                        didHit = true;
+                        SwitchTool(ToolType.None);
+                        Debug.Log("Selected Tool: " + currentTool);
+                    }
+                }
+                if (!didHit && Physics.Raycast(ray, out hit))
+                {
+                    if (hit.transform.IsChildOf(scanner.transform))
+                    {
+                        SwitchTool(ToolType.Scanner);
+                        Debug.Log("Selected Tool: " + currentTool);
+                    }
+                }
                 mouseStartPosition = pointAction.ReadValue<Vector2>();
                 plantStartRotation = activePlant.transform.rotation;
                 Debug.Log("Mouse Clicked at: " + mouseStartPosition);
@@ -180,10 +198,20 @@ public class GameController : MonoBehaviour
         }
     }
 
-    public void DisableAll()
+    public void SwitchTool(ToolType tool)
     {
+        if (currentTool == tool) return;
+        currentTool = tool;
         var scannerComponent = scanner.GetComponent<ScannerFollowMouse>();
-        scannerComponent.Disable();
+        if (currentTool == ToolType.Scanner)
+        {
+            stopFlashing = true;
+            scannerComponent.Enable();
+        }
+        else
+        {
+            scannerComponent.Disable();
+        }
     }
 
     public IEnumerator PoofOut(Transform obj, float duration, Action callback = null)
@@ -317,8 +345,11 @@ public class GameController : MonoBehaviour
                 continue;
             }
 
-            // TODO: character name here
-            dialogueBox.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = msg.line;
+            // TODO: character image here or delete the image
+            var character = dialogueBox.transform.Find("Text_Box/Character").GetComponent<TMPro.TextMeshProUGUI>();
+            var dialogue = dialogueBox.transform.Find("Text_Box/Dialogue").GetComponent<TMPro.TextMeshProUGUI>();
+            character.text = msg.characterName;
+            dialogue.text = msg.line;
             // Make sure we always wait at least one frame to continue
             yield return null;
             while (!clickAction.WasPerformedThisFrame())
@@ -434,7 +465,7 @@ public class GameController : MonoBehaviour
         stopFlashing = false;
         var component = scanner.transform.Find("Scanner");
         var renderer = component.GetComponent<MeshRenderer>();
-        StartCoroutine(FlashColor(renderer, Color.yellow, 1.5f, 5));
+        StartCoroutine(FlashColor(renderer, Color.yellow, 1.0f, 3));
     }
 
     public IEnumerator FlashColor(MeshRenderer renderer, Color flashColor, float duration, int times)
@@ -484,7 +515,7 @@ public class GameController : MonoBehaviour
         stopFlashing = false;
         var component = labNotebook.transform.parent;
         var renderer = component.GetComponent<Image>();
-        StartCoroutine(FlashPanelColor(renderer, Color.yellow, 1.5f, 2));
+        StartCoroutine(FlashPanelColor(renderer, Color.yellow, 1.0f, 2));
     }
 
     public IEnumerator FlashPanelColor(UnityEngine.UI.Image image, Color flashColor, float duration, int times)

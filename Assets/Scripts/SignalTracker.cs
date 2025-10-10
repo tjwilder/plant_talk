@@ -10,37 +10,35 @@ public enum SignalType
 public class SignalTracker : MonoBehaviour
 {
     public PlantProperty property = PlantProperty.Nitrogen;
-    public SignalType signalType = SignalType.Negative;
     private LevelManager levelManager;
     private Plant plant;
-    private GameObject signal;
-    private GameObject bark;
+    private Transform positiveSignal;
+    private Transform negativeSignal;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         levelManager = FindFirstObjectByType<LevelManager>();
         plant = transform.parent.parent.GetComponent<Plant>();
-        signal = transform.Find("Signal").gameObject;
-        bark = transform.Find("Bark").gameObject;
+        positiveSignal = transform.Find("PositiveSignal");
+        negativeSignal = transform.Find("NegativeSignal");
     }
 
     // Update is called once per frame
     void Update()
     {
         var health = plant.GetNutrientHealth(property);
-        var shouldShowSignal = (signalType == SignalType.Negative && health == PropertyHealth.Unhealthy) ||
-                             (signalType == SignalType.Positive && health == PropertyHealth.Healthy);
-        if (shouldShowSignal)
+        var isPositive = health == PropertyHealth.Healthy;
+        if (isPositive)
         {
-            var shouldBark = levelManager.IsSignalDiscovered(property);
-            bark.SetActive(shouldBark);
-            signal.SetActive(!shouldBark);
+            // var shouldBark = levelManager.IsSignalDiscovered(property);
+            positiveSignal?.gameObject.SetActive(true);
+            negativeSignal?.gameObject.SetActive(false);
         }
-        else if (!shouldShowSignal)
+        else
         {
-            bark.SetActive(false);
-            signal.SetActive(false);
+            positiveSignal?.gameObject.SetActive(false);
+            negativeSignal?.gameObject.SetActive(true);
         }
     }
 }
