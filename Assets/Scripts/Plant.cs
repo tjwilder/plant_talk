@@ -9,7 +9,11 @@ public enum PlantProperty
     Potassium,
     Magnesium,
     Phosphorus,
-    Calcium
+    Calcium,
+    Sulfur,
+    Zinc,
+    Boron,
+    Copper
 }
 
 [System.Serializable]

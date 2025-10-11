@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityEngine.VFX;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -45,19 +46,31 @@ public class GameController : MonoBehaviour
     public GameObject nutrientInfoBox;
     public GameObject labNotebook;
     public GameObject testTubeRack;
+    public GameObject expandedTestTubeRack;
+    public GameObject titleScreen;
+    public bool started = false;
+
+    public GameObject bot_ne;
+    public Transform bot_ne_home;
+
 
     public AudioSource audioSource;
+    public VisualEffect poof;
 
     public List<PlantProperty> nutrientOrder = new List<PlantProperty> { PlantProperty.Nitrogen, PlantProperty.Iron, PlantProperty.Potassium, PlantProperty.Magnesium, };
+    public List<PlantProperty> expandedNutrientOrder = new List<PlantProperty> { PlantProperty.Nitrogen, PlantProperty.Iron, PlantProperty.Potassium, PlantProperty.Magnesium, PlantProperty.Phosphorus, PlantProperty.Calcium, PlantProperty.Sulfur, PlantProperty.Zinc, PlantProperty.Boron, PlantProperty.Copper };
     public Dictionary<PlantProperty, string> nutrientCards = new Dictionary<PlantProperty, string>
     {
-        [PlantProperty.Nitrogen] = "Nitrogen is always needed!",
-        [PlantProperty.Iron] = "Iron helps plants drink up Nitrogen",
-        [PlantProperty.Potassium] = "Banana!",
-        /* [PlantProperty.] = "Nitrogen is always needed!", */
-        [PlantProperty.Phosphorus] = "Symptoms of too little: Bottom of leaf may turn purple",
-        [PlantProperty.Magnesium] = "Helps plants take up nutrients",
-        [PlantProperty.Calcium] = "Important for making new cells strong",
+        [PlantProperty.Nitrogen] = "Used for photosynthesis! Help your plants stay green!",
+        [PlantProperty.Iron] = "Helps other nutrients work their best!",
+        [PlantProperty.Potassium] = "Got a wilty plant? Helps plants use water!",
+        [PlantProperty.Phosphorus] = "How your plants energize! Check for deficiency on the bottom of leaves! ",
+        [PlantProperty.Magnesium] = "Helps guide other nutrients into the plant!",
+        [PlantProperty.Calcium] = "Makes new cells grow big and strong!",
+        [PlantProperty.Sulfur] = "Protein power! Helps the plant make nutritious fruit!",
+        [PlantProperty.Zinc] = "Helps plants produce sugar!",
+        [PlantProperty.Boron] = "Got a plant with weak leaves? Keeps plants strong!",
+        [PlantProperty.Copper] = "Helps the plant feed its fruit!",
     };
 
     private int currentNutrientIndex = 2;
@@ -88,6 +101,10 @@ public class GameController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (!started)
+        {
+            return;
+        }
         if (activePlant == null)
         {
             return;
@@ -225,10 +242,14 @@ public class GameController : MonoBehaviour
                 {
                     rotatingNutrients = false;
                     // If we've unlocked it, add the nutrient info
-                    if (levelManager.levelNumber >= 3)
+                    if (levelManager.levelNumber >= 1)
                     {
                         nutrientInfoBox.SetActive(true);
-                        nutrientInfoBox.transform.Find("Text").GetComponent<TMPro.TextMeshProUGUI>().text = nutrientCards[targetProperty];
+                        var newLoc = GetNutrientInfoLocation();
+                        nutrientInfoBox.transform.position = newLoc;
+
+                        nutrientInfoBox.transform.Find("Title").GetComponent<TMPro.TextMeshProUGUI>().text = targetProperty.ToString();
+                        nutrientInfoBox.transform.Find("Dialogue").GetComponent<TMPro.TextMeshProUGUI>().text = nutrientCards[targetProperty];
                     }
                 }));
             }
@@ -309,10 +330,47 @@ public class GameController : MonoBehaviour
         foreach (var msgId in messages)
         {
             var msg = translateMessage(msgId);
-            // Skip empty messages
+            // If a message doesn't have a translation it's probably a specific code
             if (msg == null)
             {
-                if (msgId == "highlightScanner")
+                if (msgId == "resetBOT_NE")
+                {
+                    if (bot_ne.transform.position != bot_ne_home.position)
+                    {
+                        var curPosition = bot_ne.transform.position;
+                        var curRotation = bot_ne.transform.rotation;
+                        var facingAngle = Quaternion.LookRotation((bot_ne_home.position - curPosition).normalized, Vector3.up);
+                        var elapsed = 0f;
+                        var duration = 1.0f;
+                        // Move in 4 quarters; first quarter we rotate towards the target and move the first part
+                        // middle quarters we move straight towards the target
+                        // last quarter we rotate to the target rotation
+                        while (elapsed < duration / 4f)
+                        {
+                            bot_ne.transform.position = Vector3.Lerp(curPosition, bot_ne_home.position, elapsed / duration);
+                            bot_ne.transform.rotation = Quaternion.Slerp(curRotation, facingAngle, elapsed / (duration / 4f));
+                            elapsed += Time.deltaTime;
+                            yield return null;
+                        }
+                        elapsed = 0f;
+                        while (elapsed < duration / 2f)
+                        {
+                            bot_ne.transform.position = Vector3.Lerp(curPosition, bot_ne_home.position, (duration / 4f) + (elapsed / duration));
+                            elapsed += Time.deltaTime;
+                            yield return null;
+                        }
+                        elapsed = 0f;
+                        curRotation = bot_ne.transform.rotation;
+                        while (elapsed < duration / 4f)
+                        {
+                            bot_ne.transform.position = Vector3.Lerp(curPosition, bot_ne_home.position, (3f * duration / 4f) + elapsed / duration);
+                            bot_ne.transform.rotation = Quaternion.Slerp(curRotation, bot_ne_home.rotation, elapsed / (duration / 4f));
+                            elapsed += Time.deltaTime;
+                            yield return null;
+                        }
+                    }
+                }
+                else if (msgId == "highlightScanner")
                 {
                     HighlightScanner();
                     currentState = GameState.Playing;
@@ -422,9 +480,19 @@ public class GameController : MonoBehaviour
                 dialogueBox.SetActive(false);
             }
         }
-        dialogueBox.SetActive(false);
         currentState = GameState.Playing;
         callback?.Invoke();
+    }
+
+    public Vector2 GetNutrientInfoLocation()
+    {
+        var screenPoint = Camera.main.WorldToScreenPoint(testTubeRack.transform.position);
+        // Move it up a bit
+        screenPoint.y += 100;
+        // Clamp to the screen
+        screenPoint.x = Mathf.Clamp(screenPoint.x, 100, Screen.width - 100);
+        screenPoint.y = Mathf.Clamp(screenPoint.y, 100, Screen.height - 100);
+        return screenPoint;
     }
 
     public float labWritingSpeed = 0.05f;
@@ -434,7 +502,13 @@ public class GameController : MonoBehaviour
         // TODO: Just handle this by swapping out picture (maybe fading between them?)
         var notebookText = labNotebook.GetComponentInChildren<TMPro.TextMeshProUGUI>();
         var prevEntry = notebookText.text;
-        StartCoroutine(UpdateNotebook(prevEntry, entry, callback));
+        if (prevEntry == entry)
+        {
+            callback?.Invoke();
+            return;
+        }
+        callback?.Invoke();
+        // StartCoroutine(UpdateNotebook(prevEntry, entry, callback));
     }
 
     private int FindTagPosition(string noTagText, string tagText, int charIndex)
@@ -681,5 +755,36 @@ public class GameController : MonoBehaviour
     {
         yield return new WaitForSeconds(hintDuration);
         hintBox.SetActive(false);
+    }
+
+    public void SetupExpandedNutrients()
+    {
+        nutrientOrder = expandedNutrientOrder;
+        currentNutrientIndex = 0; // Start on Phosphorus
+        testTubeRack.SetActive(false);
+        testTubeRack = expandedTestTubeRack;
+        testTubeRack.SetActive(true);
+        var targetAngle = testTubeRack.transform.eulerAngles.y + (90 * (currentNutrientIndex - 2));
+        testTubeRack.transform.rotation = Quaternion.Euler(testTubeRack.transform.eulerAngles.x, targetAngle, testTubeRack.transform.eulerAngles.z);
+        nutrientInfoBox.SetActive(true);
+        var newLoc = GetNutrientInfoLocation();
+        nutrientInfoBox.transform.position = newLoc;
+        var targetProperty = nutrientOrder[currentNutrientIndex];
+        nutrientInfoBox.transform.Find("Title").GetComponent<TMPro.TextMeshProUGUI>().text = targetProperty.ToString();
+        nutrientInfoBox.transform.Find("Dialogue").GetComponent<TMPro.TextMeshProUGUI>().text = nutrientCards[targetProperty];
+    }
+
+    public void StartGame()
+    {
+        titleScreen.SetActive(false);
+        currentState = GameState.Dialogue;
+        StartCoroutine(StartDelay());
+    }
+
+    private IEnumerator StartDelay()
+    {
+        yield return null;
+        levelManager.SetupLevel();
+        started = true;
     }
 }
