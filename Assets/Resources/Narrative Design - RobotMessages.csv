@@ -57,10 +57,52 @@ Dialogue number	Dialogue Summary
 3.d	Bot-ne reinforces interdependent signals					
 Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
 Player successfully adds nitrogen	BOT-NE	I'm impressed, seedling! This is way above intern-level stuff.				3.d.1
-	BOT-NE	The tomato was communicating with themselves				3.d.2
+	BOT-NE	The tomato was communicating with themselves.				3.d.2
 	BOT-NE	They needed iron before they could absorb nitrogen.				3.d.3
 	BOT-NE	The tomato waited for the "I have iron" signal.				3.d.4
 	BOT-NE	Only then did they absorb the nitrogen you gave it.				3.d.5
 	BOT-NE	And then stopped saying "I don't have nitrogen".				3.d.6
 	BOT-NE	So, plant signals can be interdependent. 				3.d.7
 	BOT-NE	Which is science talk for "plants talk to themselves"! Notebook!	Gameplay: notebook UI flashes, new entry added.			3.d.8
+Dialogue number	Dialogue Summary					
+4.a	Bot-ne introduces third plant					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+Stage 3 starts	BOT-NE	Time to prove that you're ready to bloom to full-flowered scientist.				4.a.1
+	BOT-NE	This is A. thanalia, or thale cress. He's a bit of a star around here.				4.a.2
+	BOT-NE	Take a look. What's he gabbing about this time?	Gameplay: Player scans plant			4.a.3
+Dialogue number	Dialogue Summary					
+4.b	Bot-ne introduces chemical tags					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+	BOT-NE	Celebreties, am I right? They think they're the center of the greenhouse.				4.b.1
+	BOT-NE	Figure out what this needy plant wants.				4.b.2
+	BOT-NE	Careful, no nitrogen or iron for this prima flora. He's already got a potfull.				4.b.3
+	BOT-NE	Use those photoreceptors to take a good peep at the chemical tags.	Gameplay: Player briefly gains access to the chemical wheel, can tap through 2-3 to see that they have new labels			4.b.4
+Dialogue number	Dialogue Summary					
+4.c	Bot-ne introduces the open ended challenge					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+once 2-3 chemicals are cycled through	BOT-NE	Unfortunately, we only have 3 thale cress plants in the greenhouse.				4.c.1
+	BOT-NE	This is where you prove yourself as a scientist.				4.c.2
+	BOT-NE	You'll get your official botanist rating based on how the plants fare.				4.c.3
+	BOT-NE	Whatever you do, make sure we still have at least one plant by the end!	Gameplay: player starts to figure out what to give the plant.			4.c.4
+Dialogue number	Dialogue Summary					
+5.a	Bot-ne congratulates player on rank 1					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+if player doesn't kill a single plant	BOT-NE	Seedling, you blew my pods off!				5.a.1
+	BOT-NE	Congratulations! You're now a XXXX	Gameplay: ID card flashes on screen with prompt to go to end screen.			5.a.2
+Dialogue number	Dialogue Summary					
+5.b	Bot-ne congratulates player on rank 2					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+if player kills only one plant	BOT-NE	Mistakes are like fertilizer for discovery.				5.b.1
+	BOT-NE	Well done, seedling! You're officially a Lead Plant Whisperer.	Gameplay: ID card flashes on screen with prompt to go to end screen.			5.b.2
+Dialogue number	Dialogue Summary					
+5.c	Bot-ne congratulates player on rank 3					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+if player kills two plants	BOT-NE	Trimming it a little close. Good on you for figuring it out in the end!				5.c.1
+	BOT-NE	Solid effort! I name you Associate Botany Wiz	Gameplay: ID card flashes on screen with prompt to go to end screen.			5.c.2
+Dialogue number	Dialogue Summary					
+5.d	Bot-ne congratulates player on rank 4					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+if player kills three plants	BOT-NE	Oh pests and pustules, there goes our last thale cress!				5.d.1
+	BOT-NE	It's ok, seedling, they're very common in the wild. We'll find more.				5.d.2
+	BOT-NE	He needed XXX, then XXX	Gameplay: notebook UI flashes and populates with update		whatever the chemical pair is 	5.d.3
+	BOT-NE	We'll keep you at Plant Talk Intern for now. Come back tomorrow!	Gameplay: ID card flashes on screen with prompt to go to end screen.			5.d.4

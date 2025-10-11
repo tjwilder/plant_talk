@@ -41,17 +41,32 @@ public class GameController : MonoBehaviour
 
     public GameObject scanner;
     public GameObject dialogueBox;
+    public GameObject hintBox;
+    public GameObject nutrientInfoBox;
     public GameObject labNotebook;
     public GameObject testTubeRack;
 
     public AudioSource audioSource;
 
-    public List<PlantProperty> nutrientOrder = new List<PlantProperty> { PlantProperty.Nitrogen, PlantProperty.Iron, PlantProperty.Potassium, PlantProperty.Magnesium };
+    public List<PlantProperty> nutrientOrder = new List<PlantProperty> { PlantProperty.Nitrogen, PlantProperty.Iron, PlantProperty.Potassium, PlantProperty.Magnesium, };
+    public Dictionary<PlantProperty, string> nutrientCards = new Dictionary<PlantProperty, string>
+    {
+        [PlantProperty.Nitrogen] = "Nitrogen is always needed!",
+        [PlantProperty.Iron] = "Iron helps plants drink up Nitrogen",
+        [PlantProperty.Potassium] = "Banana!",
+        /* [PlantProperty.] = "Nitrogen is always needed!", */
+        [PlantProperty.Phosphorus] = "Symptoms of too little: Bottom of leaf may turn purple",
+        [PlantProperty.Magnesium] = "Helps plants take up nutrients",
+        [PlantProperty.Calcium] = "Important for making new cells strong",
+    };
 
     private int currentNutrientIndex = 2;
     private bool rotatingNutrients = false;
     private bool stopFlashing = false;
-    private bool addedNitrogen = false;
+    public bool addedNitrogen = false;
+    public bool addedNutrient = false;
+    public bool didScan = false;
+    public bool didScanSecondary = false;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -135,9 +150,29 @@ public class GameController : MonoBehaviour
                 Debug.Log("Mouse Clicked at: " + mouseStartPosition);
             }
 
+            if (currentTool == ToolType.Scanner)
+            {
+                var mousePosition = pointAction.ReadValue<Vector2>();
+                // Debug.Log(mousePosition);
+                // Check to see if it's in the middle 1/3 and top 1/4 of the screen
+                if (mousePosition.x > Screen.width / 3 && mousePosition.x < Screen.width * 2 / 3 &&
+                    mousePosition.y > Screen.height * 3 / 4)
+                {
+                    didScan = true;
+                }
+                // Default signal is on the middle part of the screen
+                if (mousePosition.x > Screen.width / 3 && mousePosition.x < Screen.width * 2 / 3 &&
+                    mousePosition.y > Screen.height / 3 && mousePosition.y < Screen.height / 3)
+                {
+                    didScanSecondary = true;
+                }
+            }
+
+            // If you're holding down the click button
             if (clickAction.ReadValue<float>() > 0)
             {
-                if (currentTool == ToolType.None)
+                // If you don't have a tool and you've unlocked rotation
+                if (currentTool == ToolType.None && levelManager.levelNumber > 2)
                 {
                     var mousePosition = pointAction.ReadValue<Vector2>();
                     activePlant.transform.rotation = plantStartRotation * Quaternion.Euler(mousePosition.y - mouseStartPosition.y, mousePosition.x - mouseStartPosition.x, 0);
@@ -163,7 +198,11 @@ public class GameController : MonoBehaviour
                                 { nutrientOrder[currentNutrientIndex], 1 },
                             }
                         });
-                        addedNitrogen = true;
+                        if (nutrientOrder[currentNutrientIndex] == PlantProperty.Nitrogen)
+                        {
+                            addedNitrogen = true;
+                        }
+                        addedNutrient = true;
                     }));
                     return;
                 }
@@ -180,9 +219,17 @@ public class GameController : MonoBehaviour
                 }
                 var targetProperty = nutrientOrder[currentNutrientIndex];
                 Debug.Log("Current Nutrient: " + targetProperty);
+                // Hide the nutrient info during transition
+                nutrientInfoBox.SetActive(false);
                 StartCoroutine(LerpRotation(testTubeRack.transform, Quaternion.Euler(testTubeRack.transform.eulerAngles.x, targetAngle, testTubeRack.transform.eulerAngles.z), 0.5f, () =>
                 {
                     rotatingNutrients = false;
+                    // If we've unlocked it, add the nutrient info
+                    if (levelManager.levelNumber >= 3)
+                    {
+                        nutrientInfoBox.SetActive(true);
+                        nutrientInfoBox.transform.Find("Text").GetComponent<TMPro.TextMeshProUGUI>().text = nutrientCards[targetProperty];
+                    }
                 }));
             }
         }
@@ -259,7 +306,6 @@ public class GameController : MonoBehaviour
     private IEnumerator ShowDialogue(Func<string, DialogueLine> translateMessage, List<string> messages, Action callback)
     {
         currentState = GameState.Dialogue;
-        dialogueBox.SetActive(true);
         foreach (var msgId in messages)
         {
             var msg = translateMessage(msgId);
@@ -274,7 +320,6 @@ public class GameController : MonoBehaviour
                     {
                         yield return null;
                     }
-                    continue;
                 }
                 else if (msgId == "progressLabNotebook")
                 {
@@ -285,22 +330,20 @@ public class GameController : MonoBehaviour
                     audioSource.Play();
                     yield return new WaitForSeconds(1.0f);
                     audioSource.Stop();
-                    continue;
                 }
                 else if (msgId == "highlightChemicals")
                 {
                     // HighlightChemicals();
-                    continue;
                 }
                 else if (msgId == "waitForAddNitrogen")
                 {
                     addedNitrogen = false;
+
                     currentState = GameState.Playing;
                     while (!addedNitrogen)
                     {
                         yield return null;
                     }
-                    continue;
                 }
                 else if (msgId == "waitForAddIron")
                 {
@@ -315,46 +358,68 @@ public class GameController : MonoBehaviour
                         }
                         yield return null;
                     }
-                    continue;
                 }
                 else if (msgId == "waitForScan")
                 {
                     currentState = GameState.Playing;
                     // TODO: This should maybe be a more general action, but can only handle the FIRST SCAN AT DEFAULT ROTATION for now
+                    didScan = false;
                     while (true)
                     {
-                        var mousePosition = pointAction.ReadValue<Vector2>();
-                        // Debug.Log(mousePosition);
-                        // Check to see if it's in the middle 1/3 and top 1/4 of the screen
-                        if (mousePosition.x > Screen.width / 3 && mousePosition.x < Screen.width * 2 / 3 &&
-                            mousePosition.y > Screen.height * 3 / 4)
-                        {
+                        if (didScan)
                             break;
-                        }
                         yield return null;
                     }
-                    continue;
+                }
+                else if (msgId == "waitForSecondaryScan")
+                {
+                    currentState = GameState.Playing;
+                    // TODO: This should maybe be a more general action, but can only handle the FIRST SCAN AT DEFAULT ROTATION for now
+                    didScanSecondary = false;
+                    while (true)
+                    {
+                        if (didScanSecondary)
+                            break;
+                        yield return null;
+                    }
                 }
                 else if (msgId == "startGame")
                 {
                     levelManager.levelNumber = 1;
                     levelManager.SetupLevel();
-                    continue;
                 }
-                Debug.LogWarning("Dialogue line not found: " + msgId);
-                continue;
+                else if (msgId == "h.1.a")
+                {
+                    levelManager.StartHintChain1a();
+                }
+                else if (msgId == "h.1.b")
+                {
+                    levelManager.StartHintChain1b();
+                }
+                else if (msgId == "h.2.b")
+                {
+                    levelManager.StartHintChain2b();
+                }
+                else
+                {
+                    Debug.LogWarning("Dialogue line not found: " + msgId);
+                }
             }
-
-            // TODO: character image here or delete the image
-            var character = dialogueBox.transform.Find("Text_Box/Character").GetComponent<TMPro.TextMeshProUGUI>();
-            var dialogue = dialogueBox.transform.Find("Text_Box/Dialogue").GetComponent<TMPro.TextMeshProUGUI>();
-            character.text = msg.characterName;
-            dialogue.text = msg.line;
-            // Make sure we always wait at least one frame to continue
-            yield return null;
-            while (!clickAction.WasPerformedThisFrame())
+            else
             {
+                dialogueBox.SetActive(true);
+                // TODO: character image here or delete the image
+                var character = dialogueBox.transform.Find("Text_Box/Character").GetComponent<TMPro.TextMeshProUGUI>();
+                var dialogue = dialogueBox.transform.Find("Text_Box/Dialogue").GetComponent<TMPro.TextMeshProUGUI>();
+                character.text = msg.characterName;
+                dialogue.text = msg.line;
+                // Make sure we always wait at least one frame to continue
                 yield return null;
+                while (!clickAction.WasPerformedThisFrame())
+                {
+                    yield return null;
+                }
+                dialogueBox.SetActive(false);
             }
         }
         dialogueBox.SetActive(false);
@@ -575,5 +640,46 @@ public class GameController : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    public float hintCharacterDelay = 0.02f;
+    public float hintDuration = 5.0f;
+    private Coroutine hintPlaying = null;
+    private Coroutine disposeHint = null;
+
+    public Coroutine PlayHint(DialogueLine hint)
+    {
+        if (hintPlaying != null)
+        {
+            StopCoroutine(hintPlaying);
+        }
+        if (disposeHint != null)
+        {
+            StopCoroutine(disposeHint);
+            disposeHint = null;
+        }
+        return StartCoroutine(PlayHintInternal(hint));
+    }
+
+    public IEnumerator PlayHintInternal(DialogueLine hint)
+    {
+        var message = "";
+        hintBox.SetActive(true);
+        var hintText = hintBox.transform.Find("Dialogue").GetComponent<TMPro.TextMeshProUGUI>();
+        foreach (var c in hint.line)
+        {
+            message += c;
+            hintText.text = message;
+            yield return new WaitForSeconds(hintCharacterDelay);
+        }
+        hintPlaying = null;
+        // Start the destruction coroutine but don't wait for it in case we want to play another hint
+        disposeHint = StartCoroutine(DisposeHint());
+    }
+
+    public IEnumerator DisposeHint()
+    {
+        yield return new WaitForSeconds(hintDuration);
+        hintBox.SetActive(false);
     }
 }

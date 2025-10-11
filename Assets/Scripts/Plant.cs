@@ -7,7 +7,9 @@ public enum PlantProperty
     Nitrogen,
     Iron,
     Potassium,
-    Magnesium
+    Magnesium,
+    Phosphorus,
+    Calcium
 }
 
 [System.Serializable]
@@ -120,6 +122,28 @@ public class Plant : MonoBehaviour
                     return;
                 }
             }
+            if (nutrient.property == PlantProperty.Phosphorus)
+            {
+                if (GetNutrientHealth(PlantProperty.Magnesium) != PropertyHealth.Healthy)
+                {
+                    Debug.Log($"Cannot add Phosphorus without the presense of enough Magnesium or with too much Calcium.");
+                    return;
+                }
+                else if (GetNutrientHealth(PlantProperty.Calcium) == PropertyHealth.Healthy)
+                {
+                    // GameObject.Find("Managers").GetComponent<GameController>().AddLog("Cannot add Phosphorus without the presense of enough Magnesium or with too much Calcium.");
+                    // Add tons to forcibly kill the plant
+                    nutrient.amount += 10;
+                    return;
+                }
+            }
+            // if (nutrient.property == PlantProperty.Calcium)
+            // {
+            //     if (GetNutrientHealth(PlantProperty.Phosphorus) != PropertyHealth.Healthy)
+            //     {
+            //         return;
+            //     }
+            // }
             nutrient.amount += amount;
             Debug.Log($"Added {amount} of {property}. New amount: {nutrient.amount}");
         }

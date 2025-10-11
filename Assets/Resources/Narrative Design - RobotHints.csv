@@ -1,0 +1,39 @@
+Hint collection number	Hint Summary					
+1.a	Bot-ne prompts players to use the scanner at start of game					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
+Players gains access to scanner	BOT-NE	Scan the plant.				h.1.a.1
+If scanner not picked up after X seconds	BOT-NE	Scan away, seedling!				h.1.a.2
+If scanner not picked up after X more seconds	BOT-NE	Go ahead, scan a leaf.				h.1.a.3
+Scanner shows plant signals	BOT-NE	Do you see it too?	Gameplay: robot message 2.b plays			h.1.a.4
+Hint collection number	Hint Summary					
+1.b	Bot-ne prompts players to try different chemicals at start of game					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	
+Player gains access to chemical tray	BOT-NE	Try a chemical.				h.1.b.1
+Player adds the wrong chemical	BOT-NE	Wilt it! Not that one.				h.1.b.2
+Player adds the wrong chemical	BOT-NE	Winter came early. Next one!				h.1.b.3
+Player adds the wrong chemical	BOT-NE	Fungus! Try again.				h.1.b.4
+Player adds the wrong chemical	BOT-NE	Leaf that alone! Something else.				h.1.b.5
+Player adds the right chemical	BOT-NE	Wait, what's happening?	Gameplay: dialogue 2.c starts to play			h.1.b.6
+Hint collection number	Hint Summary					
+2.b	Bot-ne responds to second signal on tomato.					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	
+If player scans the second signal on tomato	BOT-NE	Aha! I knew it!				h.2.b.1
+	BOT-NE	What's this signal mean?	Gameplay: player tries adds chemicals to address this signal.			h.2.b.2
+						
+Hint collection number	Hint Summary					
+X.a	Bot-ne prompts players to scan at any point in the game (context agnostic). All hints below added to list to play randomly after X seconds of inactivity.					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	
+	BOT-NE	Scan away, seedling!				h.x.a.1
+	BOT-NE	Go ahead, scan a leaf.				h.x.a.2
+	BOT-NE	No science unless you scan.				h.x.a.3
+	BOT-NE	Time to scan!				h.x.a.4
+	BOT-NE	Scanner, activate!				h.x.a.5
+Hint collection number	Hint Summary					
+X.b	Bot-ne responds to incorrect chemical (context agnostic). All hints below added to list to play randomly when wrong chemical added.					
+Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	
+	BOT-NE	Wilt it! Not that one.				h.x.b.1
+	BOT-NE	Winter came early. Next one!				h.x.b.2
+	BOT-NE	Fungus! Try again.				h.x.b.3
+	BOT-NE	Leaf that alone! Something else.				h.x.b.4
+	BOT-NE	That's not a healthy color.				h.x.b.5
+	BOT-NE	Shoot! Pick again.				h.x.b.6
