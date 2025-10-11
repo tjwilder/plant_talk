@@ -64,6 +64,8 @@ public class LevelManager : MonoBehaviour
     public List<LevelPlant> levelPlants;
     public List<EndDialogue> endDialogues;
 
+    public GameObject endScreen;
+
     public Transform deadPlantAnchor;
     public float spacing = 3f;
 
@@ -73,7 +75,6 @@ public class LevelManager : MonoBehaviour
     public void Start()
     {
         LoadLocalization();
-        SetupLevel();
     }
 
     public void LoadLocalizationText(string text)
@@ -172,10 +173,10 @@ public class LevelManager : MonoBehaviour
                             gameController.StartDialogue(GetDialogue, endDialogue.dialogue, () =>
                             {
                                 // Show end screen
-                                // Set title based on levelAttempts
-                                // gameController.ShowEndScreen(endDialogue.title);
+                                endScreen.SetActive(true);
+                                endScreen.transform.Find("Rank").GetComponent<TMPro.TextMeshProUGUI>().text = "You achieved the title of\n" + endDialogue.title;
                             });
-                            break;
+                            return;
                         }
                     }
 
@@ -196,6 +197,19 @@ public class LevelManager : MonoBehaviour
         gameController.activePlant.transform.Find("Plant Container/Plant Models/Dead").gameObject.SetActive(true);
         gameController.activePlant.transform.Find("Signals").gameObject.SetActive(false);
         Debug.Log("Failed level " + levelNumber);
+
+        if (levelNumber == levelDialogues.Count - 1 && levelAttempts >= 3)
+        {
+            var endDialogue = endDialogues[endDialogues.Count - 1];
+            gameController.StartDialogue(GetDialogue, endDialogue.dialogue, () =>
+            {
+                // Show end screen
+                endScreen.SetActive(true);
+                endScreen.transform.Find("Rank").GetComponent<TMPro.TextMeshProUGUI>().text = "You achieved the title of\n" + endDialogue.title;
+            });
+            return false;
+        }
+
         levelCompleted = true;
         StartCoroutine(MoveDeadPlant(gameController.activePlant, 1.0f, 1.0f, () =>
         {
@@ -228,6 +242,7 @@ public class LevelManager : MonoBehaviour
             // For level 3 we also need to help setup the new
             gameController.WriteToLabNotebook(levelDialogues[levelNumber].labNotebookText, () =>
             {
+                // gameController.SetupExpandedNutrients();
                 gameController.StartDialogue(GetDialogue, levelDialogues[levelNumber].startDialogue);
             });
         }

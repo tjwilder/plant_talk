@@ -33,7 +33,7 @@ Dialogue number	Dialogue Summary
 2.d	Bot-ne summarizes lesson					
 Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
 Once players close notebook	BOT-NE	You've completed your first experiment! Congrats, seedling!				2.d.1
-	BOT-NE	Now you know that red signals is plant talk for "nitrogen, please!"				2.d.2
+	BOT-NE	Now you know that that red signal is plant talk for "nitrogen, please!"				2.d.2
 	BOT-NE	Let's go see what some of the other plants are saying. Bet it's real sappy.	Gameplay: transition to next plant			2.d.3
 Dialogue number	Dialogue Summary					
 3.a	Bot-ne summarizes lesson					
@@ -73,7 +73,7 @@ Stage 3 starts	BOT-NE	Time to prove that you're ready to bloom to full-flowered 
 Dialogue number	Dialogue Summary					
 4.b	Bot-ne introduces chemical tags					
 Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
-	BOT-NE	Celebreties, am I right? They think they're the center of the greenhouse.				4.b.1
+	BOT-NE	Celebrities, am I right? They think they're the center of the greenhouse.				4.b.1
 	BOT-NE	Figure out what this needy plant wants.				4.b.2
 	BOT-NE	Careful, no nitrogen or iron for this prima flora. He's already got a potfull.				4.b.3
 	BOT-NE	Use those photoreceptors to take a good peep at the chemical tags.	Gameplay: Player briefly gains access to the chemical wheel, can tap through 2-3 to see that they have new labels			4.b.4

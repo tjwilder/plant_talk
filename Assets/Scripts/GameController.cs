@@ -47,6 +47,12 @@ public class GameController : MonoBehaviour
     public GameObject labNotebook;
     public GameObject testTubeRack;
     public GameObject expandedTestTubeRack;
+    public GameObject titleScreen;
+    public bool started = false;
+
+    public GameObject bot_ne;
+    public Transform bot_ne_home;
+
 
     public AudioSource audioSource;
     public VisualEffect poof;
@@ -95,6 +101,10 @@ public class GameController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (!started)
+        {
+            return;
+        }
         if (activePlant == null)
         {
             return;
@@ -320,10 +330,47 @@ public class GameController : MonoBehaviour
         foreach (var msgId in messages)
         {
             var msg = translateMessage(msgId);
-            // Skip empty messages
+            // If a message doesn't have a translation it's probably a specific code
             if (msg == null)
             {
-                if (msgId == "highlightScanner")
+                if (msgId == "resetBOT_NE")
+                {
+                    if (bot_ne.transform.position != bot_ne_home.position)
+                    {
+                        var curPosition = bot_ne.transform.position;
+                        var curRotation = bot_ne.transform.rotation;
+                        var facingAngle = Quaternion.LookRotation((bot_ne_home.position - curPosition).normalized, Vector3.up);
+                        var elapsed = 0f;
+                        var duration = 1.0f;
+                        // Move in 4 quarters; first quarter we rotate towards the target and move the first part
+                        // middle quarters we move straight towards the target
+                        // last quarter we rotate to the target rotation
+                        while (elapsed < duration / 4f)
+                        {
+                            bot_ne.transform.position = Vector3.Lerp(curPosition, bot_ne_home.position, elapsed / duration);
+                            bot_ne.transform.rotation = Quaternion.Slerp(curRotation, facingAngle, elapsed / (duration / 4f));
+                            elapsed += Time.deltaTime;
+                            yield return null;
+                        }
+                        elapsed = 0f;
+                        while (elapsed < duration / 2f)
+                        {
+                            bot_ne.transform.position = Vector3.Lerp(curPosition, bot_ne_home.position, (duration / 4f) + (elapsed / duration));
+                            elapsed += Time.deltaTime;
+                            yield return null;
+                        }
+                        elapsed = 0f;
+                        curRotation = bot_ne.transform.rotation;
+                        while (elapsed < duration / 4f)
+                        {
+                            bot_ne.transform.position = Vector3.Lerp(curPosition, bot_ne_home.position, (3f * duration / 4f) + elapsed / duration);
+                            bot_ne.transform.rotation = Quaternion.Slerp(curRotation, bot_ne_home.rotation, elapsed / (duration / 4f));
+                            elapsed += Time.deltaTime;
+                            yield return null;
+                        }
+                    }
+                }
+                else if (msgId == "highlightScanner")
                 {
                     HighlightScanner();
                     currentState = GameState.Playing;
@@ -433,7 +480,6 @@ public class GameController : MonoBehaviour
                 dialogueBox.SetActive(false);
             }
         }
-        dialogueBox.SetActive(false);
         currentState = GameState.Playing;
         callback?.Invoke();
     }
@@ -456,7 +502,13 @@ public class GameController : MonoBehaviour
         // TODO: Just handle this by swapping out picture (maybe fading between them?)
         var notebookText = labNotebook.GetComponentInChildren<TMPro.TextMeshProUGUI>();
         var prevEntry = notebookText.text;
-        StartCoroutine(UpdateNotebook(prevEntry, entry, callback));
+        if (prevEntry == entry)
+        {
+            callback?.Invoke();
+            return;
+        }
+        callback?.Invoke();
+        // StartCoroutine(UpdateNotebook(prevEntry, entry, callback));
     }
 
     private int FindTagPosition(string noTagText, string tagText, int charIndex)
@@ -720,5 +772,19 @@ public class GameController : MonoBehaviour
         var targetProperty = nutrientOrder[currentNutrientIndex];
         nutrientInfoBox.transform.Find("Title").GetComponent<TMPro.TextMeshProUGUI>().text = targetProperty.ToString();
         nutrientInfoBox.transform.Find("Dialogue").GetComponent<TMPro.TextMeshProUGUI>().text = nutrientCards[targetProperty];
+    }
+
+    public void StartGame()
+    {
+        titleScreen.SetActive(false);
+        currentState = GameState.Dialogue;
+        StartCoroutine(StartDelay());
+    }
+
+    private IEnumerator StartDelay()
+    {
+        yield return null;
+        levelManager.SetupLevel();
+        started = true;
     }
 }
