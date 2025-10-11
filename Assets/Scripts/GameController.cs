@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityEngine.VFX;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -45,19 +46,25 @@ public class GameController : MonoBehaviour
     public GameObject nutrientInfoBox;
     public GameObject labNotebook;
     public GameObject testTubeRack;
+    public GameObject expandedTestTubeRack;
 
     public AudioSource audioSource;
+    public VisualEffect poof;
 
     public List<PlantProperty> nutrientOrder = new List<PlantProperty> { PlantProperty.Nitrogen, PlantProperty.Iron, PlantProperty.Potassium, PlantProperty.Magnesium, };
+    public List<PlantProperty> expandedNutrientOrder = new List<PlantProperty> { PlantProperty.Nitrogen, PlantProperty.Iron, PlantProperty.Potassium, PlantProperty.Magnesium, PlantProperty.Phosphorus, PlantProperty.Calcium, PlantProperty.Sulfur, PlantProperty.Zinc, PlantProperty.Boron, PlantProperty.Copper };
     public Dictionary<PlantProperty, string> nutrientCards = new Dictionary<PlantProperty, string>
     {
-        [PlantProperty.Nitrogen] = "Nitrogen is always needed!",
-        [PlantProperty.Iron] = "Iron helps plants drink up Nitrogen",
-        [PlantProperty.Potassium] = "Banana!",
-        /* [PlantProperty.] = "Nitrogen is always needed!", */
-        [PlantProperty.Phosphorus] = "Symptoms of too little: Bottom of leaf may turn purple",
-        [PlantProperty.Magnesium] = "Helps plants take up nutrients",
-        [PlantProperty.Calcium] = "Important for making new cells strong",
+        [PlantProperty.Nitrogen] = "Used for photosynthesis! Help your plants stay green!",
+        [PlantProperty.Iron] = "Helps other nutrients work their best!",
+        [PlantProperty.Potassium] = "Got a wilty plant? Helps plants use water!",
+        [PlantProperty.Phosphorus] = "How your plants energize! Check for deficiency on the bottom of leaves! ",
+        [PlantProperty.Magnesium] = "Helps guide other nutrients into the plant!",
+        [PlantProperty.Calcium] = "Makes new cells grow big and strong!",
+        [PlantProperty.Sulfur] = "Protein power! Helps the plant make nutritious fruit!",
+        [PlantProperty.Zinc] = "Helps plants produce sugar!",
+        [PlantProperty.Boron] = "Got a plant with weak leaves? Keeps plants strong!",
+        [PlantProperty.Copper] = "Helps the plant feed its fruit!",
     };
 
     private int currentNutrientIndex = 2;
@@ -225,10 +232,14 @@ public class GameController : MonoBehaviour
                 {
                     rotatingNutrients = false;
                     // If we've unlocked it, add the nutrient info
-                    if (levelManager.levelNumber >= 3)
+                    if (levelManager.levelNumber >= 1)
                     {
                         nutrientInfoBox.SetActive(true);
-                        nutrientInfoBox.transform.Find("Text").GetComponent<TMPro.TextMeshProUGUI>().text = nutrientCards[targetProperty];
+                        var newLoc = GetNutrientInfoLocation();
+                        nutrientInfoBox.transform.position = newLoc;
+
+                        nutrientInfoBox.transform.Find("Title").GetComponent<TMPro.TextMeshProUGUI>().text = targetProperty.ToString();
+                        nutrientInfoBox.transform.Find("Dialogue").GetComponent<TMPro.TextMeshProUGUI>().text = nutrientCards[targetProperty];
                     }
                 }));
             }
@@ -425,6 +436,17 @@ public class GameController : MonoBehaviour
         dialogueBox.SetActive(false);
         currentState = GameState.Playing;
         callback?.Invoke();
+    }
+
+    public Vector2 GetNutrientInfoLocation()
+    {
+        var screenPoint = Camera.main.WorldToScreenPoint(testTubeRack.transform.position);
+        // Move it up a bit
+        screenPoint.y += 100;
+        // Clamp to the screen
+        screenPoint.x = Mathf.Clamp(screenPoint.x, 100, Screen.width - 100);
+        screenPoint.y = Mathf.Clamp(screenPoint.y, 100, Screen.height - 100);
+        return screenPoint;
     }
 
     public float labWritingSpeed = 0.05f;
@@ -681,5 +703,22 @@ public class GameController : MonoBehaviour
     {
         yield return new WaitForSeconds(hintDuration);
         hintBox.SetActive(false);
+    }
+
+    public void SetupExpandedNutrients()
+    {
+        nutrientOrder = expandedNutrientOrder;
+        currentNutrientIndex = 0; // Start on Phosphorus
+        testTubeRack.SetActive(false);
+        testTubeRack = expandedTestTubeRack;
+        testTubeRack.SetActive(true);
+        var targetAngle = testTubeRack.transform.eulerAngles.y + (90 * (currentNutrientIndex - 2));
+        testTubeRack.transform.rotation = Quaternion.Euler(testTubeRack.transform.eulerAngles.x, targetAngle, testTubeRack.transform.eulerAngles.z);
+        nutrientInfoBox.SetActive(true);
+        var newLoc = GetNutrientInfoLocation();
+        nutrientInfoBox.transform.position = newLoc;
+        var targetProperty = nutrientOrder[currentNutrientIndex];
+        nutrientInfoBox.transform.Find("Title").GetComponent<TMPro.TextMeshProUGUI>().text = targetProperty.ToString();
+        nutrientInfoBox.transform.Find("Dialogue").GetComponent<TMPro.TextMeshProUGUI>().text = nutrientCards[targetProperty];
     }
 }

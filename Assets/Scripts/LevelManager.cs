@@ -64,6 +64,9 @@ public class LevelManager : MonoBehaviour
     public List<LevelPlant> levelPlants;
     public List<EndDialogue> endDialogues;
 
+    public Transform deadPlantAnchor;
+    public float spacing = 3f;
+
     private bool step = false;
     private Coroutine hintCoroutine = null;
 
@@ -180,6 +183,8 @@ public class LevelManager : MonoBehaviour
                 }
                 levelNumber++;
                 levelAttempts = 0;
+                gameController.poof.enabled = true;
+                gameController.poof.Play();
                 GameObject.Destroy(gameController.activePlant);
                 SetupLevel(false);
             });
@@ -220,6 +225,7 @@ public class LevelManager : MonoBehaviour
         PositionDeadPlants();
         if (!isReset)
         {
+            // For level 3 we also need to help setup the new
             gameController.WriteToLabNotebook(levelDialogues[levelNumber].labNotebookText, () =>
             {
                 gameController.StartDialogue(GetDialogue, levelDialogues[levelNumber].startDialogue);
@@ -241,10 +247,11 @@ public class LevelManager : MonoBehaviour
     public IEnumerator MoveDeadPlant(GameObject deadPlant, float deadDuration = 1.0f, float moveDuration = 1.0f, Action callback = null)
     {
         gameController.deadPlants.Add(deadPlant);
-        float startX = -25f;
-        float spacing = 3f;
+        float startX = deadPlantAnchor.position.x;
+        float startY = deadPlantAnchor.position.y;
+        float startZ = deadPlantAnchor.position.z;
         Vector3 startPos = deadPlant.transform.position;
-        Vector3 endPos = new Vector3(startX + (gameController.deadPlants.Count - 1) * spacing, 0, 20);
+        Vector3 endPos = new Vector3(startX + (gameController.deadPlants.Count - 1) * spacing, startY, startZ);
         float elapsed = 0f;
         while (elapsed < deadDuration)
         {
@@ -264,13 +271,14 @@ public class LevelManager : MonoBehaviour
 
     public void PositionDeadPlants()
     {
-        float startX = -25f;
-        float spacing = 3f;
+        float startX = deadPlantAnchor.position.x;
+        float startY = deadPlantAnchor.position.y;
+        float startZ = deadPlantAnchor.position.z;
         for (int i = 0; i < gameController.deadPlants.Count; i++)
         {
             if (gameController.deadPlants[i] != null)
             {
-                gameController.deadPlants[i].transform.position = new Vector3(startX + i * spacing, 0, 20);
+                gameController.deadPlants[i].transform.position = new Vector3(startX + i * spacing, startY, startZ);
             }
         }
     }

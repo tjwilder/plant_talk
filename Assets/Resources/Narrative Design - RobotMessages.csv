@@ -45,12 +45,12 @@ Dialogue number	Dialogue Summary
 Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
 Player tries to add just nitrogen a few times unsuccessfully.	BOT-NE	This tomato does need nitrogen, but the signal's not changing.				3.b.1
 	BOT-NE	This means the plant can't absorb nitrogen. Yet.				3.b.2
-	BOT-NE	This plant's chattier than the last one. Did you see any other signals?	Gameplay: player scans plant again.		Is Iron a positive or negative signal? In the current alpha version it's positive so the second plant is _less_ chatty because it's missing the iron symbol. So it would be more like "I feel like something's missing here! See, there's that other signal from your lab notebook!"	3.b.3
+	BOT-NE	Hmm, maybe the plant needs something else first?	Gameplay: player scans plant again.		Is Iron a positive or negative signal? In the current alpha version it's positive so the second plant is _less_ chatty because it's missing the iron symbol. So it would be more like "I feel like something's missing here! See, there's that other signal from your lab notebook!"	3.b.3
 Dialogue number	Dialogue Summary					
 3.c	Bot-ne explains about positive signals					
 Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
-Player successfully adds iron.	BOT-NE	You added the right chemical, but the signal's not gone.				3.c.1
-	BOT-NE	Don't worry, that's because this is a positive signal.				3.c.2
+Player successfully adds iron.	BOT-NE	Wow, a new signal appeared!				3.c.1
+	BOT-NE	Don't worry, that just means this is a positive signal.				3.c.2
 	BOT-NE	The tomato is saying "I have enough iron".				3.c.3
 	BOT-NE	You know the drill. Notebook! For science!	Gameplay: notebook UI flashes, new entry added.			3.c.4
 Dialogue number	Dialogue Summary					
@@ -88,21 +88,21 @@ Dialogue number	Dialogue Summary
 5.a	Bot-ne congratulates player on rank 1					
 Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
 if player doesn't kill a single plant	BOT-NE	Seedling, you blew my pods off!				5.a.1
-	BOT-NE	Congratulations! You're now a XXXX	Gameplay: ID card flashes on screen with prompt to go to end screen.			5.a.2
+	BOT-NE	Congratulations! You're now a Lead Plant Whisperer!	Gameplay: ID card flashes on screen with prompt to go to end screen.			5.a.2
 Dialogue number	Dialogue Summary					
 5.b	Bot-ne congratulates player on rank 2					
 Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
 if player kills only one plant	BOT-NE	Mistakes are like fertilizer for discovery.				5.b.1
-	BOT-NE	Well done, seedling! You're officially a Lead Plant Whisperer.	Gameplay: ID card flashes on screen with prompt to go to end screen.			5.b.2
+	BOT-NE	Well done, seedling! You're officially an Associate Botany Wiz.	Gameplay: ID card flashes on screen with prompt to go to end screen.			5.b.2
 Dialogue number	Dialogue Summary					
 5.c	Bot-ne congratulates player on rank 3					
 Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
 if player kills two plants	BOT-NE	Trimming it a little close. Good on you for figuring it out in the end!				5.c.1
-	BOT-NE	Solid effort! I name you Associate Botany Wiz	Gameplay: ID card flashes on screen with prompt to go to end screen.			5.c.2
+	BOT-NE	Solid effort! I name you Junior Green Technician.	Gameplay: ID card flashes on screen with prompt to go to end screen.			5.c.2
 Dialogue number	Dialogue Summary					
 5.d	Bot-ne congratulates player on rank 4					
 Trigger	Character	Dialogue	Designer Notes	Aritst Notes	Dialogue feedback	ID
 if player kills three plants	BOT-NE	Oh pests and pustules, there goes our last thale cress!				5.d.1
 	BOT-NE	It's ok, seedling, they're very common in the wild. We'll find more.				5.d.2
-	BOT-NE	He needed XXX, then XXX	Gameplay: notebook UI flashes and populates with update		whatever the chemical pair is 	5.d.3
+	BOT-NE	He needed Magnesium, then Phosphorus, then Calcium.	Gameplay: notebook UI flashes and populates with update		whatever the chemical pair is 	5.d.3
 	BOT-NE	We'll keep you at Plant Talk Intern for now. Come back tomorrow!	Gameplay: ID card flashes on screen with prompt to go to end screen.			5.d.4
