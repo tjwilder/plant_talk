@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 
 [System.Serializable]
@@ -63,6 +64,8 @@ public class LevelManager : MonoBehaviour
     public List<LevelDialogue> levelDialogues;
     public List<LevelPlant> levelPlants;
     public List<EndDialogue> endDialogues;
+
+    public Slider labNotebookSlider;
 
     public GameObject endScreen;
 
@@ -184,8 +187,7 @@ public class LevelManager : MonoBehaviour
                 }
                 levelNumber++;
                 levelAttempts = 0;
-                gameController.poof.enabled = true;
-                gameController.poof.Play();
+                gameController.Poof();
                 GameObject.Destroy(gameController.activePlant);
                 SetupLevel(false);
             });
@@ -242,7 +244,6 @@ public class LevelManager : MonoBehaviour
             // For level 3 we also need to help setup the new
             gameController.WriteToLabNotebook(levelDialogues[levelNumber].labNotebookText, () =>
             {
-                // gameController.SetupExpandedNutrients();
                 gameController.StartDialogue(GetDialogue, levelDialogues[levelNumber].startDialogue);
             });
         }
@@ -434,4 +435,18 @@ public class LevelManager : MonoBehaviour
 
     // TODO: Handle random hints for non-action or adding the wrong chemical
     // Maybe just treat them as "Level 3" things for now since there's existing hints in the first two
+    //
+    public List<float> labNotebookRatios = new List<float> { 1.0f, 0.84f, .694f, 0.0f, 1.0f, .85f, .789f, .719f, .509f, 0.0f, 0.59f, 0.27f, 0.0f, 0.653f, 0.0f };
+    public List<int> labNotebookPages = new List<int> { 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 4, 4 };
+    public List<GameObject> labNotebookPageObjects;
+    public int labNotebookIndex = 0;
+
+    public void ProgressLabNotebook()
+    {
+        if (labNotebookIndex >= labNotebookRatios.Count) return;
+        labNotebookSlider.value = labNotebookRatios[labNotebookIndex];
+        labNotebookPageObjects[labNotebookPages[labNotebookIndex] - 1].SetActive(true);
+        gameController.labNotebook = labNotebookPageObjects[labNotebookPages[labNotebookIndex] - 1];
+        labNotebookIndex++;
+    }
 }

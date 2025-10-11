@@ -45,8 +45,13 @@ public class GameController : MonoBehaviour
     public GameObject hintBox;
     public GameObject nutrientInfoBox;
     public GameObject labNotebook;
+    public GameObject labNotebookHighlighter;
     public GameObject testTubeRack;
     public GameObject expandedTestTubeRack;
+    public Transform testTubeRaised;
+    public Transform testTubeTarget;
+    public AnimationCurve testTubeRaiseCurve;
+    public AnimationCurve testTubePourCurve;
     public GameObject titleScreen;
     public bool started = false;
 
@@ -73,7 +78,7 @@ public class GameController : MonoBehaviour
         [PlantProperty.Copper] = "Helps the plant feed its fruit!",
     };
 
-    private int currentNutrientIndex = 2;
+    public int currentNutrientIndex = 2;
     private bool rotatingNutrients = false;
     private bool stopFlashing = false;
     public bool addedNitrogen = false;
@@ -84,6 +89,7 @@ public class GameController : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        titleScreen.SetActive(true);
         levelManager = GetComponent<LevelManager>();
         var inputActionAsset = InputSystem.actions;
         pointAction = inputActionAsset.FindAction("Point");
@@ -146,7 +152,7 @@ public class GameController : MonoBehaviour
                 bool didHit = false;
                 if (Physics.Raycast(ray, out hit, 100.0f, LayerMask.GetMask("Default")))
                 {
-                    Debug.Log("Hit: " + hit.transform.gameObject.name);
+                    // Debug.Log("Hit: " + hit.transform.gameObject.name);
                     if (hit.transform.gameObject.name == "Scanner Shelf")
                     {
                         didHit = true;
@@ -179,7 +185,7 @@ public class GameController : MonoBehaviour
                 }
                 // Default signal is on the middle part of the screen
                 if (mousePosition.x > Screen.width / 3 && mousePosition.x < Screen.width * 2 / 3 &&
-                    mousePosition.y > Screen.height / 3 && mousePosition.y < Screen.height / 3)
+                    mousePosition.y > Screen.height / 3 && mousePosition.y < Screen.height * 2 / 3)
                 {
                     didScanSecondary = true;
                 }
@@ -204,7 +210,8 @@ public class GameController : MonoBehaviour
                 if (Mathf.Abs(move.y - 0.1f) > 0.2f)
                 {
                     var testTube = testTubeRack.transform.Find(nutrientOrder[currentNutrientIndex].ToString());
-                    StartCoroutine(PoofOut(testTube.transform, 2.0f, () =>
+                    var actualTube = testTube.Find("Tube");
+                    StartCoroutine(PourOut(actualTube, 2.0f, () =>
                     {
                         // testTubeRack.SetActive(!testTubeRack.activeSelf);
                         rotatingNutrients = false;
@@ -227,12 +234,12 @@ public class GameController : MonoBehaviour
                 if (move.x > 0)
                 {
                     currentNutrientIndex = (currentNutrientIndex + 1) % nutrientOrder.Count;
-                    targetAngle += 90;
+                    targetAngle += 360 / nutrientOrder.Count;
                 }
                 else if (move.x < 0)
                 {
                     currentNutrientIndex = (currentNutrientIndex - 1 + nutrientOrder.Count) % nutrientOrder.Count;
-                    targetAngle -= 90;
+                    targetAngle -= 360 / nutrientOrder.Count;
                 }
                 var targetProperty = nutrientOrder[currentNutrientIndex];
                 Debug.Log("Current Nutrient: " + targetProperty);
@@ -242,7 +249,7 @@ public class GameController : MonoBehaviour
                 {
                     rotatingNutrients = false;
                     // If we've unlocked it, add the nutrient info
-                    if (levelManager.levelNumber >= 1)
+                    if (levelManager.levelNumber >= 3)
                     {
                         nutrientInfoBox.SetActive(true);
                         var newLoc = GetNutrientInfoLocation();
@@ -266,6 +273,43 @@ public class GameController : MonoBehaviour
         }
     }
 
+    public Vector3 Lerp(Vector3 start, Vector3 end, float t)
+    {
+        return start + (end - start) * t;
+    }
+
+    public Quaternion Slerp(Quaternion start, Quaternion end, float t)
+    {
+        // Quaternion slerp from scratch
+        float dot = Quaternion.Dot(start, end);
+        if (dot < 0.0f)
+        {
+            end = new Quaternion(-end.x, -end.y, -end.z, -end.w);
+            dot = -dot;
+        }
+        if (dot > 0.9995f)
+        {
+            return Quaternion.Normalize(new Quaternion(
+                start.x + t * (end.x - start.x),
+                start.y + t * (end.y - start.y),
+                start.z + t * (end.z - start.z),
+                start.w + t * (end.w - start.w)
+            ));
+        }
+        float theta0 = Mathf.Acos(dot);
+        float theta = theta0 * t;
+        float sinTheta = Mathf.Sin(theta);
+        float sinTheta0 = Mathf.Sin(theta0);
+        float s0 = Mathf.Cos(theta) - dot * sinTheta / sinTheta0;
+        float s1 = sinTheta / sinTheta0;
+        return new Quaternion(
+            (s0 * start.x) + (s1 * end.x),
+            (s0 * start.y) + (s1 * end.y),
+            (s0 * start.z) + (s1 * end.z),
+            (s0 * start.w) + (s1 * end.w)
+        );
+    }
+
     public void SwitchTool(ToolType tool)
     {
         if (currentTool == tool) return;
@@ -282,25 +326,50 @@ public class GameController : MonoBehaviour
         }
     }
 
-    public IEnumerator PoofOut(Transform obj, float duration, Action callback = null)
+    public IEnumerator PourOut(Transform obj, float duration, Action callback = null)
     {
-        Vector3 initialScale = obj.localScale;
+        var target = testTubeTarget;
+        var raised = testTubeRaised;
+        // 4 stages: raise up, rotate and move to transform, rotate back and move back, lower down
+        // Each stage is 1/4 of the duration
+        var initialPosition = obj.position;
+        var initialRotation = obj.rotation;
+        var liftPosition = raised.position;
+        var targetPosition = target.position;
+        var targetRotation = target.rotation;
+        var stepDuration = duration - 0.2f;
         float elapsed = 0f;
-
-        while (elapsed < duration / 2f)
+        while (elapsed < stepDuration / 4f)
         {
-            obj.localScale = Vector3.Lerp(initialScale, Vector3.zero, elapsed / duration);
+            obj.position = Lerp(initialPosition, liftPosition, testTubeRaiseCurve.Evaluate(elapsed / (stepDuration / 4f)));
             elapsed += Time.deltaTime;
             yield return null;
         }
         elapsed = 0f;
-        while (elapsed < duration / 2f)
+        while (elapsed < stepDuration / 4f)
         {
-            obj.localScale = Vector3.Lerp(Vector3.zero, initialScale, elapsed / duration);
+            obj.position = Lerp(liftPosition, targetPosition, testTubePourCurve.Evaluate(elapsed / (stepDuration / 4f)));
+            obj.rotation = Slerp(initialRotation, targetRotation, testTubePourCurve.Evaluate(elapsed / (stepDuration / 4f)));
             elapsed += Time.deltaTime;
             yield return null;
         }
-        obj.localScale = initialScale;
+        // Wait at the pour position
+        yield return new WaitForSeconds(0.2f);
+        elapsed = 0f;
+        while (elapsed < stepDuration / 4f)
+        {
+            obj.position = Lerp(liftPosition, targetPosition, 1 - testTubePourCurve.Evaluate(elapsed / (stepDuration / 4f)));
+            obj.rotation = Slerp(initialRotation, targetRotation, 1 - testTubePourCurve.Evaluate(elapsed / (stepDuration / 4f)));
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        elapsed = 0f;
+        while (elapsed < stepDuration / 4f)
+        {
+            obj.position = Lerp(initialPosition, liftPosition, 1 - testTubeRaiseCurve.Evaluate(elapsed / (stepDuration / 4f)));
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
         callback?.Invoke();
     }
 
@@ -383,11 +452,12 @@ public class GameController : MonoBehaviour
                 {
                     // TODO: Actually progress the notebook
                     HighlightLabNotebook();
+                    levelManager.ProgressLabNotebook();
                     // TODO: Only play audio while adding to the notebook
-                    audioSource.time = 0.1f;
-                    audioSource.Play();
-                    yield return new WaitForSeconds(1.0f);
-                    audioSource.Stop();
+                    // audioSource.time = 0.1f;
+                    // audioSource.Play();
+                    // yield return new WaitForSeconds(1.0f);
+                    // audioSource.Stop();
                 }
                 else if (msgId == "highlightChemicals")
                 {
@@ -407,10 +477,52 @@ public class GameController : MonoBehaviour
                 {
                     currentState = GameState.Playing;
                     var plantComponent = activePlant.GetComponent<Plant>();
-                    var originalIron = plantComponent.GetNutrientAmount(PlantProperty.Iron);
+                    var originalAmount = plantComponent.GetNutrientAmount(PlantProperty.Iron);
                     while (true)
                     {
-                        if (plantComponent.GetNutrientAmount(PlantProperty.Iron) > originalIron)
+                        if (plantComponent.GetNutrientAmount(PlantProperty.Iron) > originalAmount)
+                        {
+                            break;
+                        }
+                        yield return null;
+                    }
+                }
+                else if (msgId == "waitForAddMagnesium")
+                {
+                    currentState = GameState.Playing;
+                    var plantComponent = activePlant.GetComponent<Plant>();
+                    var originalAmount = plantComponent.GetNutrientAmount(PlantProperty.Magnesium);
+                    while (true)
+                    {
+                        if (plantComponent.GetNutrientAmount(PlantProperty.Magnesium) > originalAmount)
+                        {
+                            break;
+                        }
+                        yield return null;
+                    }
+                }
+                else if (msgId == "waitForAddPhosphorus")
+                {
+                    currentState = GameState.Playing;
+                    var plantComponent = activePlant.GetComponent<Plant>();
+                    var originalAmount = plantComponent.GetNutrientAmount(PlantProperty.Phosphorus);
+                    while (true)
+                    {
+                        if (plantComponent.GetNutrientAmount(PlantProperty.Phosphorus) > originalAmount)
+                        {
+                            break;
+                        }
+                        yield return null;
+                    }
+                }
+                else if (msgId == "waitForAddCalcium")
+                {
+                    currentState = GameState.Playing;
+                    var plantComponent = activePlant.GetComponent<Plant>();
+                    var originalAmount = plantComponent.GetNutrientAmount(PlantProperty.Calcium);
+                    while (true)
+                    {
+                        if (plantComponent.GetNutrientAmount(PlantProperty.Calcium) > originalAmount)
                         {
                             break;
                         }
@@ -445,6 +557,10 @@ public class GameController : MonoBehaviour
                 {
                     levelManager.levelNumber = 1;
                     levelManager.SetupLevel();
+                }
+                else if (msgId == "expandNutrients")
+                {
+                    SetupExpandedNutrients();
                 }
                 else if (msgId == "h.1.a")
                 {
@@ -484,14 +600,16 @@ public class GameController : MonoBehaviour
         callback?.Invoke();
     }
 
+    public float nutrientInfoBoxOffsetY = 0;
+
     public Vector2 GetNutrientInfoLocation()
     {
         var screenPoint = Camera.main.WorldToScreenPoint(testTubeRack.transform.position);
         // Move it up a bit
-        screenPoint.y += 100;
+        screenPoint.y += nutrientInfoBoxOffsetY;
         // Clamp to the screen
-        screenPoint.x = Mathf.Clamp(screenPoint.x, 100, Screen.width - 100);
-        screenPoint.y = Mathf.Clamp(screenPoint.y, 100, Screen.height - 100);
+        screenPoint.x = Mathf.Clamp(screenPoint.x, nutrientInfoBoxOffsetY, Screen.width - nutrientInfoBoxOffsetY);
+        screenPoint.y = Mathf.Clamp(screenPoint.y, nutrientInfoBoxOffsetY, Screen.height - nutrientInfoBoxOffsetY);
         return screenPoint;
     }
 
@@ -500,13 +618,13 @@ public class GameController : MonoBehaviour
     public void WriteToLabNotebook(string entry, Action callback = null)
     {
         // TODO: Just handle this by swapping out picture (maybe fading between them?)
-        var notebookText = labNotebook.GetComponentInChildren<TMPro.TextMeshProUGUI>();
-        var prevEntry = notebookText.text;
-        if (prevEntry == entry)
-        {
-            callback?.Invoke();
-            return;
-        }
+        // var notebookText = labNotebook.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+        // var prevEntry = notebookText.text;
+        // if (prevEntry == entry)
+        // {
+        //     callback?.Invoke();
+        //     return;
+        // }
         callback?.Invoke();
         // StartCoroutine(UpdateNotebook(prevEntry, entry, callback));
     }
@@ -652,14 +770,15 @@ public class GameController : MonoBehaviour
     public void HighlightLabNotebook()
     {
         stopFlashing = false;
-        var component = labNotebook.transform.parent;
-        var renderer = component.GetComponent<Image>();
-        StartCoroutine(FlashPanelColor(renderer, Color.yellow, 1.0f, 2));
+        var renderer = labNotebookHighlighter.GetComponent<Image>();
+        StartCoroutine(FlashPanelColor(renderer, 1.0f, 1));
     }
 
-    public IEnumerator FlashPanelColor(UnityEngine.UI.Image image, Color flashColor, float duration, int times)
+    public IEnumerator FlashPanelColor(UnityEngine.UI.Image image, float duration, int times)
     {
-        Color originalColor = image.color;
+        Color baseColor = image.color;
+        Color originalColor = new Color(baseColor.r, baseColor.g, baseColor.b, 0.0f);
+        Color flashColor = new Color(baseColor.r, baseColor.g, baseColor.b, 0.5f);
         float halfDuration = duration / 2f;
         float elapsed = 0f;
         for (int i = 0; i < times; i++)
@@ -760,18 +879,22 @@ public class GameController : MonoBehaviour
     public void SetupExpandedNutrients()
     {
         nutrientOrder = expandedNutrientOrder;
-        currentNutrientIndex = 0; // Start on Phosphorus
+        currentNutrientIndex = 0; // Start on Boron
         testTubeRack.SetActive(false);
         testTubeRack = expandedTestTubeRack;
         testTubeRack.SetActive(true);
-        var targetAngle = testTubeRack.transform.eulerAngles.y + (90 * (currentNutrientIndex - 2));
-        testTubeRack.transform.rotation = Quaternion.Euler(testTubeRack.transform.eulerAngles.x, targetAngle, testTubeRack.transform.eulerAngles.z);
         nutrientInfoBox.SetActive(true);
         var newLoc = GetNutrientInfoLocation();
         nutrientInfoBox.transform.position = newLoc;
         var targetProperty = nutrientOrder[currentNutrientIndex];
         nutrientInfoBox.transform.Find("Title").GetComponent<TMPro.TextMeshProUGUI>().text = targetProperty.ToString();
         nutrientInfoBox.transform.Find("Dialogue").GetComponent<TMPro.TextMeshProUGUI>().text = nutrientCards[targetProperty];
+    }
+
+    public void Poof()
+    {
+        poof.enabled = true;
+        poof.Play();
     }
 
     public void StartGame()

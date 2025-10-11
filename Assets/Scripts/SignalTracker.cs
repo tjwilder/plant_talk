@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public enum SignalType
 {
@@ -12,17 +13,24 @@ public class SignalTracker : MonoBehaviour
     public PlantProperty property = PlantProperty.Nitrogen;
     private LevelManager levelManager;
     private Plant plant;
-    private Material originalShader;
+    private Material[] originalShaders;
     public Material negativeShader;
-    private Transform positiveSignal;
-    private Transform negativeSignal;
+    private Transform positiveSignal = null;
+    private Transform negativeSignal = null;
+
+    private MeshRenderer meshRenderer;
+
+    private bool isNegativeShader = false;
+
+    public List<int> materialIndices;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         levelManager = FindFirstObjectByType<LevelManager>();
         plant = transform.parent.parent.GetComponent<Plant>();
-        originalShader = plant.gameObject.transform.Find("Plant Container/Plant Models/Scanner").GetComponent<MeshRenderer>().materials[1];
+        meshRenderer = plant.gameObject.transform.Find("Plant Container/Plant Models/Scanner").GetComponent<MeshRenderer>();
+        originalShaders = meshRenderer.materials;
         positiveSignal = transform.Find("PositiveSignal");
         negativeSignal = transform.Find("NegativeSignal");
     }
@@ -37,26 +45,27 @@ public class SignalTracker : MonoBehaviour
             // var shouldBark = levelManager.IsSignalDiscovered(property);
             positiveSignal?.gameObject.SetActive(true);
             negativeSignal?.gameObject.SetActive(false);
-            if (negativeShader != null)
+            if (negativeShader != null && isNegativeShader)
             {
-                var meshRenderer = plant.gameObject.transform.Find("Plant Container/Plant Models/Scanner").GetComponent<MeshRenderer>();
-                var materials = meshRenderer.sharedMaterials;
-                if (materials[1] == originalShader) return;
-                materials[1] = originalShader;
-                meshRenderer.sharedMaterials = materials;
+                isNegativeShader = false;
+                Debug.Log("Switching to original shader\nIf this is not working, it's possible the original instance we're copying already changed materials before copying", this);
+                meshRenderer.materials = originalShaders;
             }
         }
         else
         {
             positiveSignal?.gameObject.SetActive(false);
             negativeSignal?.gameObject.SetActive(true);
-            if (negativeShader != null)
+            if (negativeShader != null && !isNegativeShader)
             {
-                var meshRenderer = plant.gameObject.transform.Find("Plant Container/Plant Models/Scanner").GetComponent<MeshRenderer>();
-                var materials = meshRenderer.sharedMaterials;
-                if (materials[1] == negativeShader) return;
-                materials[1] = negativeShader;
-                meshRenderer.sharedMaterials = materials;
+                isNegativeShader = true;
+                Debug.Log("Switching to new shader", this);
+                var materials = meshRenderer.materials;
+                foreach (var index in materialIndices)
+                {
+                    materials[index] = negativeShader;
+                }
+                meshRenderer.materials = materials;
             }
         }
     }
